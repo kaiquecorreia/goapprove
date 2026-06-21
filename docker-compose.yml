@@ -1,0 +1,22 @@
+services:
+  goapprove-postgres:
+    image: postgres:18.1
+    container_name: goapprove_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: gandalf
+      POSTGRES_PASSWORD: gandalf123
+      POSTGRES_DB: goapprove
+    ports:
+      - "5440:5432"
+    volumes:
+      - goapprove_postgres_data:/var/lib/postgresql/
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U gandalf -d goapprove" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  goapprove_postgres_data:
+    driver: local

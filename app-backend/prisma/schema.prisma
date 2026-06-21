@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMINISTRATOR
+  APPROVER
+  VIEWER
+  RULES_MANAGER
+  EXTERNAL_INTEGRATION
+}
+
+enum Environment {
+  DEVELOPMENT
+  HOMOLOGATION
+  PRODUCTION
+}
+
+model Company {
+  companyId                  String        @id @default(uuid()) @map("company_id") @db.Uuid
+  externalIntegrationCode    String        @unique @map("external_integration_code") @db.VarChar(50)
+  name                       String        @map("name") @db.VarChar(150)
+  cnpj                       String?       @map("cnpj") @db.VarChar(14)
+  status                     Boolean       @default(true)
+  externalIntegrationUrlBase String?       @map("external_integration_url_base") @db.Text
+  environment                Environment   @map("environment")
+  notes                      String?       @map("notes") @db.Text
+  createdAt                  DateTime      @default(now()) @map("created_at")
+  updatedAt                  DateTime      @updatedAt @map("updated_at")
+
+  users                      CompanyUser[]
+
+  @@map("companies")
+}
+
+model User {
+  userId                  String         @id @default(uuid()) @map("user_id") @db.Uuid
+  name                    String         @map("name") @db.VarChar(150)
+  email                   String         @unique @map("email") @db.VarChar(150)
+  externalIntegrationUser String         @unique @map("external_integration_user") @db.VarChar(50)
+  role                    UserRole       @map("role")
+  active                  Boolean        @default(true) @map("active")
+  approvalLimit           Decimal?       @map("approval_limit") @db.Decimal(15, 2)
+  createdAt               DateTime       @default(now()) @map("created_at")
+  updatedAt               DateTime       @updatedAt @map("updated_at")
+
+  companies               CompanyUser[]
+  substitutes             UserSubstitute[] @relation("UserAsOriginal")
+  substitutedBy           UserSubstitute[] @relation("UserAsSubstitute")
+
+  @@map("users")
+}
+
+model CompanyUser {
+  companyId String   @map("company_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  isDefault Boolean  @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  company   Company  @relation(fields: [companyId], references: [companyId], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@id([companyId, userId])
+  @@map("companies_users")
+}
+
+model UserSubstitute {
+  userId       String   @map("user_id") @db.Uuid
+  substituteId String   @map("substitute_id") @db.Uuid
+  priority     Int      @default(1) @map("priority")
+  createdAt    DateTime @default(now()) @map("created_at")
+  
+  user         User     @relation("UserAsOriginal", fields: [userId], references: [userId], onDelete: Cascade)
+  substitute   User     @relation("UserAsSubstitute", fields: [substituteId], references: [userId], onDelete: Cascade)
+
+  @@id([userId, substituteId])
+  @@map("users_substitutes")
+}
