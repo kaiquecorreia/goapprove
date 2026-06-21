@@ -1,10 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from './app.module';
-import { UsersModule } from './modules/users/users.module';
-import { AddressesModule } from './modules/addresses/addresses.module';
-import { ContactsModule } from './modules/contacts/contacts.module';
-import { EstablishmentsModule } from './modules/establishments/establishments.module';
-import { SessionsModule } from './modules/sessions/sessions.module';
+import { UserModule } from './modules/user/user.module';
 
 describe('AppModule', () => {
   let module: TestingModule;
@@ -33,29 +29,8 @@ describe('AppModule', () => {
   });
 
   it('should import UsersModule', () => {
-    const usersModule = module.get<UsersModule>(UsersModule);
+    const usersModule = module.get<UserModule>(UserModule);
     expect(usersModule).toBeDefined();
-  });
-
-  it('should import AddressesModule', () => {
-    const addressesModule = module.get<AddressesModule>(AddressesModule);
-    expect(addressesModule).toBeDefined();
-  });
-
-  it('should import ContactsModule', () => {
-    const contactsModule = module.get<ContactsModule>(ContactsModule);
-    expect(contactsModule).toBeDefined();
-  });
-
-  it('should import EstablishmentsModule', () => {
-    const establishmentsModule =
-      module.get<EstablishmentsModule>(EstablishmentsModule);
-    expect(establishmentsModule).toBeDefined();
-  });
-
-  it('should import SessionsModule', () => {
-    const sessionsModule = module.get<SessionsModule>(SessionsModule);
-    expect(sessionsModule).toBeDefined();
   });
 
   it('should have correct module metadata', () => {
@@ -77,10 +52,6 @@ describe('AppModule', () => {
 
   it('should have correct imports in module metadata', () => {
     const imports: any[] = Reflect.getMetadata('imports', AppModule) || [];
-    expect(imports).toContain(UsersModule);
-    expect(imports).toContain(AddressesModule);
-    expect(imports).toContain(ContactsModule);
-    expect(imports).toContain(EstablishmentsModule);
-    expect(imports).toContain(SessionsModule);
+    expect(imports).toContain(UserModule);
   });
 });
