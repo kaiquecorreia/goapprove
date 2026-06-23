@@ -1,13 +1,16 @@
 import { Injectable } from '@nestjs/common';
 
-import { CreateUserDto } from '../dtos/create-user.dto';
 import { UserService } from '../services/user.service';
 
 @Injectable()
-export class CreateUserUseCase {
+export class GetUserUseCase {
   constructor(private readonly userService: UserService) {}
 
-  execute(data: CreateUserDto) {
-    return this.userService.create(data);
+  executeById(userId: string) {
+    return this.userService.findById(userId);
+  }
+
+  executeAll() {
+    return this.userService.findAll();
   }
 }
