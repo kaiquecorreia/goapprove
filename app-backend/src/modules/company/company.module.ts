@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { PrismaModule } from '../../shared/prisma/prisma.module';
+import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CompanyController } from './company.controller';
 import { PrismaCompanyRepository } from './repositories/prisma-company.repository';
 import { CompanyRepository } from './repositories/company.repository';
@@ -13,6 +14,7 @@ import { UpdateCompanyUseCase } from './use-cases/update-company.use-case';
   imports: [PrismaModule],
   controllers: [CompanyController],
   providers: [
+    PrismaService,
     CompanyService,
     CreateCompanyUseCase,
     GetCompanyUseCase,
