@@ -1,0 +1,34 @@
+@baseUrl = http://localhost:3012
+@userId = 00000000-0000-4000-a000-000000000001
+
+### Create a new user
+POST {{baseUrl}}/user
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "externalIntegrationUser": "johndoe_ext",
+  "role": "APPROVER",
+  "active": true,
+  "approvalLimit": 5000,
+  "companyIds": [],
+  "substituteIds": []
+}
+
+### List all users
+GET {{baseUrl}}/user
+
+### Get user by ID
+GET {{baseUrl}}/user/{{userId}}
+
+### Update a user
+PATCH {{baseUrl}}/user/{{userId}}
+Content-Type: application/json
+
+{
+  "name": "John Doe Updated",
+  "email": "john.updated@example.com",
+  "active": false,
+  "approvalLimit": 10000
+}

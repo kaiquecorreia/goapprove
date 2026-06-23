@@ -1,0 +1,32 @@
+@baseUrl = http://localhost:3012
+@companyId = 00000000-0000-4000-a000-000000000001
+
+### Create a new company
+POST {{baseUrl}}/company
+Content-Type: application/json
+
+{
+  "externalIntegrationCode": "EXT_COMPANY_001",
+  "name": "Acme Corporation",
+  "environment": "PRODUCTION",
+  "cnpj": "12345678000195",
+  "status": true,
+  "externalIntegrationUrlBase": "https://api.acme.com",
+  "notes": "Main production company"
+}
+
+### List all companies
+GET {{baseUrl}}/company
+
+### Get company by ID
+GET {{baseUrl}}/company/{{companyId}}
+
+### Update a company
+PATCH {{baseUrl}}/company/{{companyId}}
+Content-Type: application/json
+
+{
+  "name": "Acme Corporation Updated",
+  "status": false,
+  "notes": "Deactivated for maintenance"
+}

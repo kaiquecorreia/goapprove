@@ -40,8 +40,8 @@ export async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
-  console.log('Starting GoApprove API on port', process.env.PORT ?? 3013);
-  await app.listen(process.env.PORT ?? 3013);
+  console.log('Starting GoApprove API on port', process.env.PORT ?? 3012);
+  await app.listen(process.env.PORT ?? 3012);
 }
 bootstrap()
   .then()
