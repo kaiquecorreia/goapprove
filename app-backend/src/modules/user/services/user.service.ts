@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
-import { PrismaService } from '../../../shared/prisma/prisma.service';
+import { TransactionService } from '../../../shared/prisma/transaction.service';
 import { CreateUserDto } from '../dtos/create-user.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
 import { UserRepository } from '../repositories/user.repository';
@@ -15,11 +15,11 @@ import { UserRepository } from '../repositories/user.repository';
 export class UserService {
   constructor(
     private readonly userRepository: UserRepository,
-    private readonly prismaService: PrismaService,
+    private readonly transactionService: TransactionService,
   ) {}
 
   async create(data: CreateUserDto) {
-    return this.prismaService.runInTransaction(async () => {
+    return this.transactionService.run(async () => {
       try {
         return await this.userRepository.create(data);
       } catch (error) {
@@ -49,7 +49,7 @@ export class UserService {
   }
 
   async update(userId: string, data: UpdateUserDto) {
-    return this.prismaService.runInTransaction(async () => {
+    return this.transactionService.run(async () => {
       if (data.substituteIds?.length) {
         if (data.substituteIds.includes(userId)) {
           throw new BadRequestException(

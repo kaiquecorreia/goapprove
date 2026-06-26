@@ -1,33 +1,35 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { signIn, signOut } from 'next-auth/react';
 import axios from 'axios';
 
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  avatar?: string | null;
-  whatsapp?: string;
-  minimalProfileCompleted?: boolean;
-}
+// interface User {
+//   id: string;
+//   email: string;
+//   name: string;
+//   avatar?: string | null;
+//   whatsapp?: string;
+//   minimalProfileCompleted?: boolean;
+// }
 
 interface AuthContextType {
-  user: User | null;
-  loading: boolean;
+  // user: User | null;
+  // loading: boolean;
   login: (identifier: string, password: string) => Promise<void>;
+  loginWithInfor: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  // const [user, setUser] = useState<User | null>(null);
+  // const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const login = async (identifier: string, password: string) => {
+  const login = async () => {
     try {
       // TODO: Implement login
 
@@ -60,13 +62,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loginWithInfor = async () => {
+    await signIn('infor', { callbackUrl: '/' });
+  };
+
   const logout = async () => {
     try {
-      // TODO: Implement logout
-
-      router.push('/login');
+      await signOut({ callbackUrl: '/login' });
     } catch (error) {
-      // TODO: Handle error
       console.error('Logout failed:', error);
       throw new Error('Ocorreu um erro inesperado. Por favor, tente novamente.');
     }
@@ -75,10 +78,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider
       value={{
-        user,
-        loading,
+        // user,
+        // loading,
         login,
-        logout
+        loginWithInfor,
+        logout,
       }}
     >
       {children}

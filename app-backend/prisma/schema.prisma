@@ -20,6 +20,14 @@ enum Environment {
   PRODUCTION
 }
 
+enum Provider {
+  INFOR
+}
+
+enum AuthType {
+  oauth2
+}
+
 model Company {
   companyId                  String        @id @default(uuid()) @map("company_id") @db.Uuid
   externalIntegrationCode    String        @unique @map("external_integration_code") @db.VarChar(50)
@@ -33,6 +41,7 @@ model Company {
   updatedAt                  DateTime      @updatedAt @map("updated_at")
 
   users                      CompanyUser[]
+  integrations               CompanyIntegration[]
 
   @@map("companies")
 }
@@ -79,4 +88,23 @@ model UserSubstitute {
 
   @@id([userId, substituteId])
   @@map("users_substitutes")
+}
+
+model CompanyIntegration {
+  integrationId String   @id @default(uuid()) @map("integration_id") @db.Uuid
+  companyId     String   @map("company_id") @db.Uuid
+  provider      Provider @map("provider")
+  authType      AuthType @default(oauth2) @map("auth_type")
+  baseUrl       String   @map("base_url") @db.Text
+  clientId      String?  @map("client_id") @db.VarChar(255)
+  clientSecret  String?  @map("client_secret") @db.Text
+  customData    Json?    @map("custom_data")
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  company       Company  @relation(fields: [companyId], references: [companyId], onDelete: Cascade)
+
+  @@unique([companyId, provider])
+  @@map("company_integrations")
 }

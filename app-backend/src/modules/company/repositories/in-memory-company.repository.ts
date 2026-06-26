@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Company } from '@prisma/client';
+import { Company, Prisma } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 
 import { CreateCompanyDto } from '../dtos/create-company.dto';
@@ -41,6 +41,20 @@ export class InMemoryCompanyRepository implements CompanyRepository {
   findById(companyId: string): Promise<Company | null> {
     return Promise.resolve(
       this.companies.find((company) => company.companyId === companyId) ?? null,
+    );
+  }
+
+  findFirst(criteria: Prisma.CompanyWhereInput): Promise<Company | null> {
+    const conditions = criteria.OR ?? [criteria];
+
+    return Promise.resolve(
+      this.companies.find((company) =>
+        conditions.some((condition) =>
+          Object.entries(condition).every(
+            ([key, value]) => company[key as keyof Company] === value,
+          ),
+        ),
+      ) ?? null,
     );
   }
 

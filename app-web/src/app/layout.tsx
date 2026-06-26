@@ -1,5 +1,6 @@
 'use client';
 
+import { SessionProvider } from 'next-auth/react';
 import { ThemeProvider } from 'next-themes';
 import { Quicksand } from 'next/font/google';
 import '../styles/globals.scss';
@@ -30,17 +31,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <ThemeProvider attribute="class" enableSystem={true} defaultTheme="system">
-          <AuthProvider>
-            {shouldShowMenus ? (
-              <div className={styles.appLayout}>
-                <div className={styles.container}>
-                  <div className={styles.content}>{children}</div>
+          <SessionProvider>
+            <AuthProvider>
+              {shouldShowMenus ? (
+                <div className={styles.appLayout}>
+                  <div className={styles.container}>
+                    <div className={styles.content}>{children}</div>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              children
-            )}
-          </AuthProvider>
+              ) : (
+                children
+              )}
+            </AuthProvider>
+          </SessionProvider>
           <Toaster
             position="top-right"
             richColors

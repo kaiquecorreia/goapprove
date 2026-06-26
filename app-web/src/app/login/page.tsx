@@ -3,6 +3,7 @@
 import Logo from '../../components/Logo';
 import styles from './styles.module.scss';
 import { useAuth } from '../../contexts/AuthContext';
+import { Building2 } from 'lucide-react';
 import { useState, useEffect, Suspense } from 'react';
 import { useForm } from 'react-hook-form';
 import { useSearchParams } from 'next/navigation';
@@ -14,7 +15,7 @@ import { feedback } from '@/services/feedback';
 const INVALID_LOGIN_MESSAGE = 'Falha ao fazer login. Verifique suas credenciais.';
 
 function LoginContent() {
-  const { login } = useAuth();
+  const { login, loginWithInfor } = useAuth();
   const [error, setError] = useState('');
   const searchParams = useSearchParams();
 
@@ -79,6 +80,15 @@ function LoginContent() {
           <Logo />
         </div>
         {error && <div className={styles.error}>{error}</div>}
+
+        <button type="button" className={styles.inforButton} onClick={loginWithInfor}>
+          <Building2 size={20} />
+          Login com Infor
+        </button>
+
+        <div className={styles.divider}>
+          <span>ou</span>
+        </div>
 
         <form className={styles.loginForm} onSubmit={handleSubmit(onSubmit)}>
           <div className={styles.inputGroup}>

@@ -1,0 +1,20 @@
+@baseUrl = http://localhost:3012
+
+### Onboard a new company with its admin user
+POST {{baseUrl}}/onboarding/company
+Content-Type: application/json
+
+{
+  "companyName": "Acme Corporation",
+  "cnpj": "12345678000195",
+  "externalIntegrationCode": "EXT_COMPANY_001",
+  "adminName": "Jane Doe",
+  "adminEmail": "jane.doe@acme.com",
+  "adminExternalIntegrationUser": "EXT_ADMIN_001",
+  "integration": {
+    "provider": "INFOR",
+    "baseUrl": "https://api.infor.example.com",
+    "clientId": "client-123",
+    "clientSecret": "super-secret-value"
+  }
+}

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Company } from '@prisma/client';
+import { Company, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { CreateCompanyDto } from '../dtos/create-company.dto';
@@ -19,6 +19,12 @@ export class PrismaCompanyRepository implements CompanyRepository {
   async findById(companyId: string): Promise<Company | null> {
     return this.prismaService.getClient().company.findUnique({
       where: { companyId },
+    });
+  }
+
+  async findFirst(criteria: Prisma.CompanyWhereInput): Promise<Company | null> {
+    return this.prismaService.getClient().company.findFirst({
+      where: criteria,
     });
   }
 

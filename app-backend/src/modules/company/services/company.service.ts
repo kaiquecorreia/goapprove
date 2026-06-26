@@ -8,17 +8,17 @@ import { Prisma } from '@prisma/client';
 import { CreateCompanyDto } from '../dtos/create-company.dto';
 import { UpdateCompanyDto } from '../dtos/update-company.dto';
 import { CompanyRepository } from '../repositories/company.repository';
-import { PrismaService } from '../../../shared/prisma/prisma.service';
+import { TransactionService } from '../../../shared/prisma/transaction.service';
 
 @Injectable()
 export class CompanyService {
   constructor(
     private readonly companyRepository: CompanyRepository,
-    private readonly prismaService: PrismaService,
+    private readonly transactionService: TransactionService,
   ) {}
 
   async create(data: CreateCompanyDto) {
-    return this.prismaService.runInTransaction(async () => {
+    return this.transactionService.run(async () => {
       try {
         return await this.companyRepository.create(data);
       } catch (error) {
@@ -48,7 +48,7 @@ export class CompanyService {
   }
 
   async delete(companyId: string) {
-    return this.prismaService.runInTransaction(async () => {
+    return this.transactionService.run(async () => {
       const company = await this.companyRepository.findById(companyId);
 
       if (!company) {
@@ -62,7 +62,7 @@ export class CompanyService {
   }
 
   async update(companyId: string, data: UpdateCompanyDto) {
-    return this.prismaService.runInTransaction(async () => {
+    return this.transactionService.run(async () => {
       try {
         const company = await this.companyRepository.update(companyId, data);
 

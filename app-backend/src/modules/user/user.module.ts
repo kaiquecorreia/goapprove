@@ -21,5 +21,6 @@ import { UserController } from './user.controller';
     UpdateUserUseCase,
     { provide: UserRepository, useClass: PrismaUserRepository },
   ],
+  exports: [UserRepository, UserService, CreateUserUseCase],
 })
 export class UserModule {}

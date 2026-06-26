@@ -44,6 +44,26 @@
     }
 }
 
+.inforButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-sm;
+    width: 100%;
+    padding: $spacing-md;
+    border: none;
+    border-radius: $border-radius;
+    background: #002D6E;
+    color: #ffffff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+        background-color: #003f9a;
+    }
+}
+
 .divider {
     margin: $spacing-lg 0;
     display: flex;
