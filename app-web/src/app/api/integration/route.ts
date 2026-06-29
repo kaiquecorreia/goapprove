@@ -5,10 +5,14 @@ import { AxiosError } from 'axios';
 import { baseAuthOptions } from '@/lib/auth';
 import { internalApiClient } from '@/services/api';
 
-async function requireOwnerSession() {
+async function requireOwnerOrAdminSession() {
   const session = await getServerSession(baseAuthOptions);
 
-  if (!session?.companyId || !session?.externalIntegrationUser || session.role !== 'OWNER') {
+  if (
+    !session?.companyId ||
+    !session?.externalIntegrationUser ||
+    (session.role !== 'OWNER' && session.role !== 'ADMINISTRATOR')
+  ) {
     return null;
   }
 
@@ -16,7 +20,7 @@ async function requireOwnerSession() {
 }
 
 export async function GET() {
-  const session = await requireOwnerSession();
+  const session = await requireOwnerOrAdminSession();
 
   if (!session) {
     return NextResponse.json({ message: 'Não autorizado' }, { status: 403 });
@@ -41,7 +45,7 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
-  const session = await requireOwnerSession();
+  const session = await requireOwnerOrAdminSession();
 
   if (!session) {
     return NextResponse.json({ message: 'Não autorizado' }, { status: 403 });

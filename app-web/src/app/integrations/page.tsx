@@ -69,7 +69,7 @@ export default function OnboardingPage() {
   return (
     <div className={styles.container}>
       <div className={styles.box}>
-        <h1 className={styles.title}>Integração com a Infor</h1>
+        <h1 className={styles.title}>Integrações</h1>
         <p className={styles.subtitle}>
           Configure as credenciais de autenticação OAuth da sua empresa com a Infor.
         </p>

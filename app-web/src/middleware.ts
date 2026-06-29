@@ -20,16 +20,7 @@ export default withAuth(
       return NextResponse.redirect(new URL('/', req.url));
     }
 
-    if (pathname === ERoutePath.ONBOARDING && role !== EUserRole.OWNER) {
-      return NextResponse.redirect(new URL('/', req.url));
-    }
-
-    if (
-      role &&
-      pathname !== ERoutePath.ONBOARDING &&
-      isPrivatePath(pathname) &&
-      !canAccessRoute(role, pathname)
-    ) {
+    if (role && isPrivatePath(pathname) && !canAccessRoute(role, pathname)) {
       return NextResponse.redirect(new URL(ROLE_DEFAULT_ROUTE[role], req.url));
     }
 

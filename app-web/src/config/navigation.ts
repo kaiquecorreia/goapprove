@@ -7,6 +7,7 @@ import {
   Users,
   Building2,
   ShieldCheck,
+  Plug,
 } from 'lucide-react';
 
 type RoutesType = {
@@ -23,7 +24,7 @@ export enum ERoutePath {
   HOME = '/',
   LOGIN = '/login',
   LOGIN_INFOR = '/login/infor',
-  ONBOARDING = '/onboarding',
+  INTEGRATIONS = '/integrations',
   OCS_PENDING = '/ocs/pending',
   HISTORY = '/history',
   RULES = '/rules',
@@ -36,7 +37,7 @@ export const ROUTES: RoutesType = {
   [ERouteType.PUBLIC]: [ERoutePath.LOGIN, ERoutePath.LOGIN_INFOR],
   [ERouteType.PRIVATE]: [
     ERoutePath.HOME,
-    ERoutePath.ONBOARDING,
+    ERoutePath.INTEGRATIONS,
     ERoutePath.OCS_PENDING,
     ERoutePath.HISTORY,
     ERoutePath.RULES,
@@ -75,6 +76,7 @@ const ALL_PAGE_ROUTES = [
   ERoutePath.USERS,
   ERoutePath.COMPANIES,
   ERoutePath.AUDIT,
+  ERoutePath.INTEGRATIONS,
 ];
 
 export const ROLE_ROUTE_ACCESS: Record<EUserRole, ERoutePath[]> = {
@@ -163,6 +165,12 @@ export const navigationGroups: NavigationGroup[] = [
         href: ERoutePath.COMPANIES,
         icon: Building2,
         allowedRoles: [EUserRole.OWNER, EUserRole.ADMINISTRATOR, EUserRole.EXTERNAL_INTEGRATION],
+      },
+      {
+        name: 'Integrações',
+        href: ERoutePath.INTEGRATIONS,
+        icon: Plug,
+        allowedRoles: [EUserRole.OWNER, EUserRole.ADMINISTRATOR],
       },
     ],
   },

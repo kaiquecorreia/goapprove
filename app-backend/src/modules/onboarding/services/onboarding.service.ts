@@ -32,7 +32,7 @@ export class OnboardingService {
     private readonly transactionService: TransactionService,
   ) {}
 
-  private async assertOwnerOfCompany(
+  private async assertOwnerOrAdminOfCompany(
     companyId: string,
     actingExternalIntegrationUser: string,
   ) {
@@ -40,7 +40,11 @@ export class OnboardingService {
       actingExternalIntegrationUser,
     );
 
-    if (!user || !user.active || user.role !== UserRole.OWNER) {
+    if (
+      !user ||
+      !user.active ||
+      (user.role !== UserRole.OWNER && user.role !== UserRole.ADMINISTRATOR)
+    ) {
       throw new ForbiddenException(FORBIDDEN_MESSAGE);
     }
 
@@ -110,7 +114,10 @@ export class OnboardingService {
     companyId: string,
     actingExternalIntegrationUser: string,
   ) {
-    await this.assertOwnerOfCompany(companyId, actingExternalIntegrationUser);
+    await this.assertOwnerOrAdminOfCompany(
+      companyId,
+      actingExternalIntegrationUser,
+    );
 
     const integration =
       await this.companyIntegrationRepository.findByCompanyAndProvider(
@@ -131,7 +138,7 @@ export class OnboardingService {
   }
 
   async updateCompanyIntegration(companyId: string, dto: UpdateIntegrationDto) {
-    await this.assertOwnerOfCompany(
+    await this.assertOwnerOrAdminOfCompany(
       companyId,
       dto.actingExternalIntegrationUser,
     );
