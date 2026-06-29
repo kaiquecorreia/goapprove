@@ -1,6 +1,7 @@
-import { mockCompanies } from '@/lib/mock';
+import { internalApiClient } from './api';
 import type { Company } from '@/lib/mock/types';
 
-export function getCompanies(): Company[] {
-  return mockCompanies;
+export async function getCompanies(): Promise<Company[]> {
+  const { data } = await internalApiClient.get<Company[]>('/company');
+  return data;
 }

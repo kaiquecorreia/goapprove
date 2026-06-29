@@ -1,6 +1,7 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -17,46 +18,135 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Select } from '@/components/ui/Select';
 import { Switch } from '@/components/ui/Switch';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { feedback } from '@/services/feedback';
-import { mockCompanies } from '@/lib/mock/companies';
-import { mockUsers } from '@/lib/mock/users';
-import { USER_PROFILES, userSchema, type UserFormData } from '@/app/users/schema';
+import { createUser, updateUser } from '@/services/usersClient';
+import { USER_ROLE_LABELS } from '@/lib/userRoleLabels';
+import { USER_ROLE_OPTIONS, userSchema, type UserFormData } from '@/app/users/schema';
+import type { Company, User } from '@/lib/mock/types';
 
-export function UserFormDialog({ trigger }: { trigger: ReactNode }) {
+function buildDefaultValues(user?: User): UserFormData {
+  return {
+    name: user?.name ?? '',
+    email: user?.email ?? '',
+    externalIntegrationUser: user?.externalIntegrationUser ?? '',
+    role: user?.role ?? USER_ROLE_OPTIONS[1],
+    active: user?.active ?? true,
+    approvalLimit: user?.approvalLimit ?? 0,
+    companyIds: user?.companies.map((link) => link.companyId) ?? [],
+    substituteIds:
+      user?.substitutes
+        .slice()
+        .sort((a, b) => a.priority - b.priority)
+        .map((link) => link.substituteId) ?? [],
+  };
+}
+
+interface UserFormDialogProps {
+  trigger?: ReactNode;
+  user?: User;
+  companies: Company[];
+  users: User[];
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function UserFormDialog({
+  trigger,
+  user,
+  companies,
+  users,
+  open,
+  onOpenChange,
+}: UserFormDialogProps) {
+  const router = useRouter();
+  const isEditing = !!user;
+
+  const isControlled = open !== undefined;
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = isControlled ? !!open : internalOpen;
+  const setOpen = (next: boolean) => {
+    if (!isControlled) setInternalOpen(next);
+    onOpenChange?.(next);
+  };
+
   const {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      profile: 'Aprovador',
-      company: mockCompanies[0]?.name ?? '',
-      approvalLimit: 0,
-      substitute: '',
-      active: true,
-    },
+    defaultValues: buildDefaultValues(user),
   });
 
+  useEffect(() => {
+    if (isOpen) {
+      reset(buildDefaultValues(user));
+    }
+  }, [isOpen, user, reset]);
+
+  const companyIds = watch('companyIds');
+  const substituteIds = watch('substituteIds');
+
+  const toggleCompany = (companyId: string) => {
+    setValue(
+      'companyIds',
+      companyIds.includes(companyId)
+        ? companyIds.filter((id) => id !== companyId)
+        : [...companyIds, companyId],
+    );
+  };
+
+  const toggleSubstitute = (substituteId: string) => {
+    setValue(
+      'substituteIds',
+      substituteIds.includes(substituteId)
+        ? substituteIds.filter((id) => id !== substituteId)
+        : [...substituteIds, substituteId],
+    );
+  };
+
   const onSubmit = async (data: UserFormData) => {
-    await feedback.promise(Promise.resolve(data), {
-      loading: 'Criando usuário...',
-      success: `Usuário ${data.name} criado com sucesso!`,
-      error: 'Falha ao criar usuário.',
-    });
-    reset();
+    const payload = {
+      name: data.name,
+      email: data.email,
+      externalIntegrationUser: data.externalIntegrationUser,
+      role: data.role,
+      active: data.active,
+      approvalLimit: data.approvalLimit,
+      companyIds: data.companyIds,
+      substituteIds: data.substituteIds,
+    };
+
+    try {
+      if (isEditing && user) {
+        await updateUser(user.userId, payload);
+        feedback.success(`Usuário ${data.name} atualizado com sucesso!`);
+      } else {
+        await createUser(payload);
+        feedback.success(`Usuário ${data.name} criado com sucesso!`);
+      }
+      setOpen(false);
+      router.refresh();
+    } catch (error) {
+      feedback.error(error instanceof Error ? error.message : 'Falha ao salvar usuário.');
+    }
   };
 
   return (
-    <Dialog>
-      <DialogTrigger>{trigger}</DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={setOpen}>
+      {trigger && <DialogTrigger>{trigger}</DialogTrigger>}
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Novo usuário</DialogTitle>
-          <DialogDescription>Cadastre um novo usuário do GoApprove.</DialogDescription>
+          <DialogTitle>{isEditing ? 'Editar usuário' : 'Novo usuário'}</DialogTitle>
+          <DialogDescription>
+            {isEditing
+              ? 'Atualize os dados de acesso deste usuário.'
+              : 'Cadastre um novo usuário do GoApprove.'}
+          </DialogDescription>
         </DialogHeader>
 
         <form
@@ -85,25 +175,25 @@ export function UserFormDialog({ trigger }: { trigger: ReactNode }) {
           </div>
 
           <div>
-            <Label htmlFor="profile">Perfil</Label>
-            <Select
-              id="profile"
-              options={USER_PROFILES.map((profile) => ({ label: profile, value: profile }))}
-              error={errors.profile?.message}
-              {...register('profile')}
+            <Label htmlFor="externalIntegrationUser">Usuário de integração (Infor)</Label>
+            <Input
+              id="externalIntegrationUser"
+              placeholder="usuario@empresa.com"
+              error={errors.externalIntegrationUser?.message}
+              {...register('externalIntegrationUser')}
             />
           </div>
 
           <div>
-            <Label htmlFor="company">Empresa</Label>
+            <Label htmlFor="role">Perfil</Label>
             <Select
-              id="company"
-              options={mockCompanies.map((company) => ({
-                label: company.name,
-                value: company.name,
+              id="role"
+              options={USER_ROLE_OPTIONS.map((role) => ({
+                label: USER_ROLE_LABELS[role],
+                value: role,
               }))}
-              error={errors.company?.message}
-              {...register('company')}
+              error={errors.role?.message}
+              {...register('role')}
             />
           </div>
 
@@ -119,17 +209,50 @@ export function UserFormDialog({ trigger }: { trigger: ReactNode }) {
           </div>
 
           <div>
-            <Label htmlFor="substitute">Substituto (opcional)</Label>
-            <Select
-              id="substitute"
-              placeholder="Nenhum"
-              options={mockUsers.map((user) => ({ label: user.name, value: user.name }))}
-              {...register('substitute')}
-            />
+            <Label>Empresas</Label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              {companies.map((company) => (
+                <label
+                  key={company.companyId}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                >
+                  <Checkbox
+                    checked={companyIds.includes(company.companyId)}
+                    onChange={() => toggleCompany(company.companyId)}
+                  />
+                  {company.name}
+                </label>
+              ))}
+            </div>
+            {errors.companyIds && (
+              <span style={{ color: 'var(--color-danger)', fontSize: '0.8rem' }}>
+                {errors.companyIds.message}
+              </span>
+            )}
+          </div>
+
+          <div>
+            <Label>Substitutos (em ordem de prioridade)</Label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              {users
+                .filter((candidate) => candidate.userId !== user?.userId)
+                .map((candidate) => (
+                  <label
+                    key={candidate.userId}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                  >
+                    <Checkbox
+                      checked={substituteIds.includes(candidate.userId)}
+                      onChange={() => toggleSubstitute(candidate.userId)}
+                    />
+                    {candidate.name}
+                  </label>
+                ))}
+            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <Switch id="active" defaultChecked {...register('active')} />
+            <Switch id="active" {...register('active')} />
             <Label htmlFor="active" style={{ margin: 0 }}>
               Usuário ativo
             </Label>
@@ -137,7 +260,7 @@ export function UserFormDialog({ trigger }: { trigger: ReactNode }) {
 
           <DialogFooter>
             <Button type="submit" isLoading={isSubmitting}>
-              Salvar usuário
+              {isEditing ? 'Salvar alterações' : 'Salvar usuário'}
             </Button>
           </DialogFooter>
         </form>

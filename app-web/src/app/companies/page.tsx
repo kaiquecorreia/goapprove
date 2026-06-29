@@ -1,15 +1,14 @@
-'use client';
-
 import { Plus } from 'lucide-react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { CompaniesTable } from '@/components/domain/CompaniesTable';
+import { CompanyFormDialog } from '@/components/domain/CompanyFormDialog';
 import { getCompanies } from '@/services/companies';
 import styles from './styles.module.scss';
 
-export default function EmpresasPage() {
-  const companies = getCompanies();
+export default async function EmpresasPage() {
+  const companies = await getCompanies();
 
   return (
     <div className={styles.page}>
@@ -17,9 +16,9 @@ export default function EmpresasPage() {
         title="Empresas"
         description="Empresas integradas ao ERP Infor LN."
         actions={
-          <Button leftIcon={<Plus size={16} />} disabled>
-            Nova empresa
-          </Button>
+          <CompanyFormDialog
+            trigger={<Button leftIcon={<Plus size={16} />}>Nova empresa</Button>}
+          />
         }
       />
 

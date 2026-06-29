@@ -1,38 +1,44 @@
+import type { EUserRole } from '@/config/navigation';
+
 export type OCStatus = 'pending' | 'approved' | 'rejected' | 'cancelled' | 'no_rule' | 'error';
 
 export type LNStatus = 'received' | 'synced' | 'pending_send' | 'failed';
 
-export type UserProfile =
-  | 'Administrador'
-  | 'Gestor de Regras'
-  | 'Aprovador'
-  | 'Consulta'
-  | 'Integração LN';
-
 export type ApprovalMode = 'ANY' | 'ALL' | 'SEQUENTIAL';
 
-export type CompanyEnvironment = 'Produção' | 'Homologação';
+export type CompanyEnvironment = 'DEVELOPMENT' | 'HOMOLOGATION' | 'PRODUCTION';
 
 export interface Company {
-  id: string;
-  codeLN: string;
+  companyId: string;
+  externalIntegrationCode: string;
   name: string;
-  cnpj: string;
+  cnpj?: string;
+  status: boolean;
+  externalIntegrationUrlBase?: string;
   environment: CompanyEnvironment;
-  url: string;
-  status: 'Ativo' | 'Inativo';
-  observations?: string;
+  notes?: string;
+}
+
+export interface UserCompanyLink {
+  companyId: string;
+  isDefault: boolean;
+}
+
+export interface UserSubstituteLink {
+  substituteId: string;
+  priority: number;
 }
 
 export interface User {
-  id: string;
+  userId: string;
   name: string;
   email: string;
-  profile: UserProfile;
-  company: string;
-  approvalLimit: number;
-  substitute?: string;
-  status: 'Ativo' | 'Inativo';
+  externalIntegrationUser: string;
+  role: EUserRole;
+  active: boolean;
+  approvalLimit: number | null;
+  companies: UserCompanyLink[];
+  substitutes: UserSubstituteLink[];
 }
 
 export interface Supplier {

@@ -1,7 +1,12 @@
-import { mockCompanies } from './companies';
 import { mockSuppliers } from './suppliers';
 import type { ApprovalLevel, OCItem, OCStatus, PurchaseOrder, TimelineEvent } from './types';
 
+const MOCK_COMPANY_NAMES = [
+  'Indústria Norte S.A.',
+  'Logística Sul Ltda.',
+  'Tech Centro S.A.',
+  'Comércio Leste Ltda.',
+];
 const REQUESTERS = ['Bruno Henrique Lima', 'Carla Mendes', 'Gabriela Tavares', 'Eduarda Ribeiro'];
 const CATEGORIES = ['Elétrico', 'TI', 'Logística', 'Matéria-prima'];
 const COST_CENTERS = ['PROD', 'TI', 'MKT', 'LOG'];
@@ -84,7 +89,7 @@ function buildTimeline(status: OCStatus, receivedAt: string): TimelineEvent[] {
 function buildOC(index: number, status: OCStatus): PurchaseOrder {
   const day = ((index * 3) % 27) + 1;
   const month = ((index * 2) % 6) + 1;
-  const company = mockCompanies[index % mockCompanies.length];
+  const companyName = MOCK_COMPANY_NAMES[index % MOCK_COMPANY_NAMES.length];
   const supplier = mockSuppliers[index % mockSuppliers.length];
   const requester = REQUESTERS[index % REQUESTERS.length];
   const total = 15000 + index * 4231.5;
@@ -94,7 +99,7 @@ function buildOC(index: number, status: OCStatus): PurchaseOrder {
   return {
     id: `oc-${status}-${index}`,
     number: `OC-2026-${String(1000 + index)}`,
-    company: company.name,
+    company: companyName,
     supplier: supplier.name,
     requester,
     buyer: 'Diego Pereira',
