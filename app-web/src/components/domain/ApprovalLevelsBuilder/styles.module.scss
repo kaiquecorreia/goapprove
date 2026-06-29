@@ -1,0 +1,25 @@
+.builder {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: auto 1fr 1.5fr auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.levelBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background-color: var(--color-bg-tertiary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}

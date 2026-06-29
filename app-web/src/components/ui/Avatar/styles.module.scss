@@ -1,0 +1,41 @@
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 700;
+  color: var(--color-text-inverse);
+  flex-shrink: 0;
+}
+
+.sm {
+  width: 28px;
+  height: 28px;
+  font-size: 0.7rem;
+}
+
+.md {
+  width: 38px;
+  height: 38px;
+  font-size: 0.85rem;
+}
+
+.primary {
+  background-color: var(--color-brand-primary);
+}
+
+.info {
+  background-color: var(--color-info);
+}
+
+.success {
+  background-color: var(--color-success);
+}
+
+.warning {
+  background-color: var(--color-warning);
+}
+
+.secondary {
+  background-color: var(--color-brand-secondary);
+}

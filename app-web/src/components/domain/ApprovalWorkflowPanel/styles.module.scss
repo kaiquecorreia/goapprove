@@ -1,0 +1,67 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.level {
+  border: 1px solid var(--color-border-primary);
+  border-radius: 8px;
+  padding: 0.9rem;
+}
+
+.levelHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.7rem;
+}
+
+.levelBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background-color: var(--color-bg-tertiary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.sla {
+  font-size: 0.8rem;
+  color: var(--color-text-tertiary);
+  margin-left: auto;
+}
+
+.approvers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.approver {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.approverName {
+  flex: 1;
+  font-size: 0.85rem;
+  color: var(--color-text-primary);
+}
+
+.success {
+  color: var(--color-success);
+}
+
+.destructive {
+  color: var(--color-error);
+}
+
+.warning {
+  color: var(--color-warning);
+}

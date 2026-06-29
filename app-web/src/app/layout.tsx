@@ -4,8 +4,8 @@ import { SessionProvider } from 'next-auth/react';
 import { ThemeProvider } from 'next-themes';
 import { Quicksand } from 'next/font/google';
 import '../styles/globals.scss';
-import styles from '../styles/grid-layout.module.scss';
 import { AuthProvider } from '../contexts/AuthContext';
+import { AppShell } from '../components/AppShell';
 import { usePathname } from 'next/navigation';
 import { Toaster } from 'sonner';
 import { isPrivatePath } from '../config/navigation';
@@ -33,15 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider attribute="class" enableSystem={true} defaultTheme="system">
           <SessionProvider>
             <AuthProvider>
-              {shouldShowMenus ? (
-                <div className={styles.appLayout}>
-                  <div className={styles.container}>
-                    <div className={styles.content}>{children}</div>
-                  </div>
-                </div>
-              ) : (
-                children
-              )}
+              {shouldShowMenus ? <AppShell>{children}</AppShell> : children}
             </AuthProvider>
           </SessionProvider>
           <Toaster

@@ -24,6 +24,7 @@
     "react-hook-form": "7.57.0",
     "react-icons": "5.5.0",
     "react-number-format": "5.4.4",
+    "recharts": "3.9.0",
     "sass": "1.86.3",
     "sonner": "2.0.7",
     "zod": "3.25.56"

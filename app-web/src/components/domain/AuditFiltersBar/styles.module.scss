@@ -1,0 +1,14 @@
+.bar {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.search {
+  flex: 1;
+  min-width: 240px;
+}
+
+.date {
+  max-width: 200px;
+}
