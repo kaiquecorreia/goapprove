@@ -21,7 +21,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
   return (
     <aside className={cx(styles.sidebar, collapsed && styles.collapsed)}>
       <div className={styles.brand}>
-        {!collapsed && <Logo />}
+        {!collapsed && <Logo height={28} />}
         <button
           type="button"
           className={styles.toggleButton}
