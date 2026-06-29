@@ -20,7 +20,7 @@ import { Separator } from '@/components/ui/Separator';
 import { CriteriaBuilder } from '@/components/domain/CriteriaBuilder';
 import { ApprovalLevelsBuilder } from '@/components/domain/ApprovalLevelsBuilder';
 import { feedback } from '@/services/feedback';
-import { CONFLICT_STRATEGY_OPTIONS, ruleSchema, type RuleFormData } from '@/app/regras/schema';
+import { CONFLICT_STRATEGY_OPTIONS, ruleSchema, type RuleFormData } from '@/app/rules/schema';
 
 export function RuleBuilderSheet({ trigger }: { trigger: ReactNode }) {
   const {

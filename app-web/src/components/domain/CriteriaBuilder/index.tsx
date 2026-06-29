@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
 import { RULE_FIELDS, RULE_OPERATORS } from '@/lib/mock/rules';
-import type { RuleFormData } from '@/app/regras/schema';
+import type { RuleFormData } from '@/app/rules/schema';
 import styles from './styles.module.scss';
 
 interface CriteriaBuilderProps {

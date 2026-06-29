@@ -24,12 +24,12 @@ export enum ERoutePath {
   LOGIN = '/login',
   LOGIN_INFOR = '/login/infor',
   ONBOARDING = '/onboarding',
-  OCS_PENDENTES = '/ocs/pendentes',
-  HISTORICO = '/historico',
-  REGRAS = '/regras',
-  USUARIOS = '/usuarios',
-  EMPRESAS = '/empresas',
-  AUDITORIA = '/auditoria',
+  OCS_PENDING = '/ocs/pending',
+  HISTORY = '/history',
+  RULES = '/rules',
+  USERS = '/users',
+  COMPANIES = '/companies',
+  AUDIT = '/audit',
 }
 
 export const ROUTES: RoutesType = {
@@ -37,16 +37,16 @@ export const ROUTES: RoutesType = {
   [ERouteType.PRIVATE]: [
     ERoutePath.HOME,
     ERoutePath.ONBOARDING,
-    ERoutePath.OCS_PENDENTES,
-    ERoutePath.HISTORICO,
-    ERoutePath.REGRAS,
-    ERoutePath.USUARIOS,
-    ERoutePath.EMPRESAS,
-    ERoutePath.AUDITORIA,
+    ERoutePath.OCS_PENDING,
+    ERoutePath.HISTORY,
+    ERoutePath.RULES,
+    ERoutePath.USERS,
+    ERoutePath.COMPANIES,
+    ERoutePath.AUDIT,
   ],
 };
 
-// Rotas dinâmicas privadas que não cabem no enum ERoutePath (ex: /ocs/[id])
+// Private dynamic routes that don't fit the ERoutePath enum (e.g. /ocs/[id])
 const PRIVATE_PATH_PREFIXES = ['/ocs/'];
 
 export function isPublicPath(path: string): boolean {
@@ -74,20 +74,20 @@ export const navigationGroups: NavigationGroup[] = [
     label: 'Operação',
     items: [
       { name: 'Dashboard', href: ERoutePath.HOME, icon: LayoutDashboard },
-      { name: 'OCs Pendentes', href: ERoutePath.OCS_PENDENTES, icon: Inbox },
-      { name: 'Histórico', href: ERoutePath.HISTORICO, icon: History },
+      { name: 'OCs Pendentes', href: ERoutePath.OCS_PENDING, icon: Inbox },
+      { name: 'Histórico', href: ERoutePath.HISTORY, icon: History },
     ],
   },
   {
     label: 'Configuração',
     items: [
-      { name: 'Regras de Negócio', href: ERoutePath.REGRAS, icon: GitBranch },
-      { name: 'Usuários', href: ERoutePath.USUARIOS, icon: Users },
-      { name: 'Empresas', href: ERoutePath.EMPRESAS, icon: Building2 },
+      { name: 'Regras de Negócio', href: ERoutePath.RULES, icon: GitBranch },
+      { name: 'Usuários', href: ERoutePath.USERS, icon: Users },
+      { name: 'Empresas', href: ERoutePath.COMPANIES, icon: Building2 },
     ],
   },
   {
     label: 'Governança',
-    items: [{ name: 'Auditoria', href: ERoutePath.AUDITORIA, icon: ShieldCheck }],
+    items: [{ name: 'Auditoria', href: ERoutePath.AUDIT, icon: ShieldCheck }],
   },
 ];

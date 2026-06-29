@@ -28,7 +28,7 @@ export default function OcDetailPage() {
     return (
       <div className={styles.notFound}>
         <p>Ordem de compra não encontrada.</p>
-        <Link href="/ocs/pendentes">
+        <Link href="/ocs/pending">
           <Button variant="outline" leftIcon={<ArrowLeft size={16} />}>
             Voltar para OCs Pendentes
           </Button>
@@ -39,7 +39,7 @@ export default function OcDetailPage() {
 
   return (
     <div className={styles.page}>
-      <Link href="/ocs/pendentes" className={styles.backLink}>
+      <Link href="/ocs/pending" className={styles.backLink}>
         <ArrowLeft size={14} /> Voltar
       </Link>
 

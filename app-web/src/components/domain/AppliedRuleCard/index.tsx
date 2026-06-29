@@ -13,7 +13,7 @@ export function AppliedRuleCard({ ruleName }: { ruleName?: string }) {
         <div className={styles.body}>
           <span className={styles.label}>Regra aplicada</span>
           {ruleName ? (
-            <Link href="/regras" className={styles.ruleName}>
+            <Link href="/rules" className={styles.ruleName}>
               {ruleName}
             </Link>
           ) : (

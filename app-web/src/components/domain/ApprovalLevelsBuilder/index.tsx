@@ -5,8 +5,8 @@ import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
-import { APPROVAL_MODES } from '@/app/regras/schema';
-import type { RuleFormData } from '@/app/regras/schema';
+import { APPROVAL_MODES } from '@/app/rules/schema';
+import type { RuleFormData } from '@/app/rules/schema';
 import styles from './styles.module.scss';
 
 interface ApprovalLevelsBuilderProps {

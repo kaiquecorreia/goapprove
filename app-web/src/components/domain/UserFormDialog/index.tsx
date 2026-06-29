@@ -20,7 +20,7 @@ import { Switch } from '@/components/ui/Switch';
 import { feedback } from '@/services/feedback';
 import { mockCompanies } from '@/lib/mock/companies';
 import { mockUsers } from '@/lib/mock/users';
-import { USER_PROFILES, userSchema, type UserFormData } from '@/app/usuarios/schema';
+import { USER_PROFILES, userSchema, type UserFormData } from '@/app/users/schema';
 
 export function UserFormDialog({ trigger }: { trigger: ReactNode }) {
   const {

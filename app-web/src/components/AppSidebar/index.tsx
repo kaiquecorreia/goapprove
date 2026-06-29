@@ -39,7 +39,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
             <ul className={styles.items}>
               {group.items.map((item) => {
                 const isActive = pathname === item.href;
-                const badge = item.href === '/ocs/pendentes' ? pendingCount : undefined;
+                const badge = item.href === '/ocs/pending' ? pendingCount : undefined;
                 const Icon = item.icon;
 
                 return (
