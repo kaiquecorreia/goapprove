@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 
 import { TransactionService } from '../../../shared/prisma/transaction.service';
 import { CreateUserDto } from '../dtos/create-user.dto';
@@ -19,6 +19,8 @@ export class UserService {
   ) {}
 
   async create(data: CreateUserDto) {
+    this.assertCompanyRequirement(data.role, data.companyIds);
+
     return this.transactionService.run(async () => {
       try {
         return await this.userRepository.create(data);
@@ -50,6 +52,17 @@ export class UserService {
 
   async update(userId: string, data: UpdateUserDto) {
     return this.transactionService.run(async () => {
+      const existing = await this.userRepository.findById(userId);
+
+      if (!existing) {
+        throw new NotFoundException(`User with id ${userId} not found`);
+      }
+
+      const effectiveRole = data.role ?? existing.role;
+      const effectiveCompanyIds =
+        data.companyIds ?? existing.companies.map((c) => c.companyId);
+      this.assertCompanyRequirement(effectiveRole, effectiveCompanyIds);
+
       if (data.substituteIds?.length) {
         if (data.substituteIds.includes(userId)) {
           throw new BadRequestException(
@@ -76,6 +89,17 @@ export class UserService {
         throw error;
       }
     });
+  }
+
+  private assertCompanyRequirement(role: UserRole, companyIds?: string[]) {
+    if (
+      role !== UserRole.ADMINISTRATOR &&
+      (!companyIds || companyIds.length === 0)
+    ) {
+      throw new BadRequestException(
+        'Users with a role other than ADMINISTRATOR must be associated to at least one company',
+      );
+    }
   }
 
   private isUniqueConstraintError(error: unknown): boolean {

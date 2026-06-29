@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Building2 } from 'lucide-react';
 import { useState, useEffect, Suspense } from 'react';
 import { useForm } from 'react-hook-form';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginFormData } from './schema';
 import { AxiosError } from 'axios';
@@ -15,8 +15,9 @@ import { feedback } from '@/services/feedback';
 const INVALID_LOGIN_MESSAGE = 'Falha ao fazer login. Verifique suas credenciais.';
 
 function LoginContent() {
-  const { login, loginWithInfor } = useAuth();
+  const { login } = useAuth();
   const [error, setError] = useState('');
+  const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -81,7 +82,11 @@ function LoginContent() {
         </div>
         {error && <div className={styles.error}>{error}</div>}
 
-        <button type="button" className={styles.inforButton} onClick={loginWithInfor}>
+        <button
+          type="button"
+          className={styles.inforButton}
+          onClick={() => router.push('/login/infor')}
+        >
           <Building2 size={20} />
           Login com Infor
         </button>

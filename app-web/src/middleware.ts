@@ -1,11 +1,18 @@
 import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
 
+import { ERoutePath, isPublicPath } from './config/navigation';
+
 export default withAuth(
   function middleware(req) {
     const { pathname } = req.nextUrl;
     const isAuthenticated = !!req.nextauth.token;
-    if (pathname === '/login' && isAuthenticated) {
+
+    if (pathname === ERoutePath.LOGIN && isAuthenticated) {
+      return NextResponse.redirect(new URL('/', req.url));
+    }
+
+    if (pathname === ERoutePath.ONBOARDING && req.nextauth.token?.role !== 'OWNER') {
       return NextResponse.redirect(new URL('/', req.url));
     }
 
@@ -15,7 +22,7 @@ export default withAuth(
     callbacks: {
       authorized: ({ req, token }) => {
         const { pathname } = req.nextUrl;
-        if (pathname === '/login') return true;
+        if (isPublicPath(pathname)) return true;
         return !!token;
       },
     },

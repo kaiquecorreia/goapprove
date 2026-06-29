@@ -13,11 +13,13 @@ export enum ERouteType {
 export enum ERoutePath {
   HOME = '/',
   LOGIN = '/login',
+  LOGIN_INFOR = '/login/infor',
+  ONBOARDING = '/onboarding',
 }
 
 export const ROUTES: RoutesType = {
-  [ERouteType.PUBLIC]: [ERoutePath.LOGIN],
-  [ERouteType.PRIVATE]: [ERoutePath.HOME],
+  [ERouteType.PUBLIC]: [ERoutePath.LOGIN, ERoutePath.LOGIN_INFOR],
+  [ERouteType.PRIVATE]: [ERoutePath.HOME, ERoutePath.ONBOARDING],
 };
 
 export function isPublicPath(path: string): boolean {

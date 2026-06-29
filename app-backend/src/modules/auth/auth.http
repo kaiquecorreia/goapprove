@@ -1,7 +1,9 @@
 @baseUrl = http://localhost:3012/auth
 @userId = 00000000-0000-4000-a000-000000000001
+@companyId = 00000000-0000-4000-a000-000000000099
 
 ### Create a new user
+# companyIds is required for any role other than ADMINISTRATOR.
 POST {{baseUrl}}/callback
 Content-Type: application/json
 
@@ -12,6 +14,6 @@ Content-Type: application/json
   "role": "APPROVER",
   "active": true,
   "approvalLimit": 5000,
-  "companyIds": [],
+  "companyIds": ["{{companyId}}"],
   "substituteIds": []
 }

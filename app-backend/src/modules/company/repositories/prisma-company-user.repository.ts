@@ -23,4 +23,10 @@ export class PrismaCompanyUserRepository implements CompanyUserRepository {
       where: { companyId },
     });
   }
+
+  async findByUserId(userId: string): Promise<CompanyUser[]> {
+    return this.prismaService.getClient().companyUser.findMany({
+      where: { userId },
+    });
+  }
 }

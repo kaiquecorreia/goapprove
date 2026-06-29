@@ -62,6 +62,15 @@ export class PrismaUserRepository implements UserRepository {
     });
   }
 
+  async findByExternalIntegrationUser(
+    externalIntegrationUser: string,
+  ): Promise<UserWithRelations | null> {
+    return this.prismaService.getClient().user.findUnique({
+      where: { externalIntegrationUser },
+      include: USER_INCLUDE,
+    });
+  }
+
   async update(
     userId: string,
     data: UpdateUserDto,

@@ -13,6 +13,9 @@ export abstract class UserRepository {
   abstract create(data: CreateUserDto): Promise<UserWithRelations>;
   abstract findById(userId: string): Promise<UserWithRelations | null>;
   abstract findAll(): Promise<UserWithRelations[]>;
+  abstract findByExternalIntegrationUser(
+    externalIntegrationUser: string,
+  ): Promise<UserWithRelations | null>;
   abstract update(
     userId: string,
     data: UpdateUserDto,

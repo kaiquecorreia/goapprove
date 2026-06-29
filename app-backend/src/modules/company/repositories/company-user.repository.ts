@@ -7,4 +7,5 @@ export abstract class CompanyUserRepository {
     isDefault: boolean;
   }): Promise<CompanyUser>;
   abstract findByCompanyId(companyId: string): Promise<CompanyUser[]>;
+  abstract findByUserId(userId: string): Promise<CompanyUser[]>;
 }

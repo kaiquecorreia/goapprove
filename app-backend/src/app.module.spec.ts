@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { APP_GUARD } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { UserModule } from './modules/user/user.module';
 
@@ -45,9 +46,10 @@ describe('AppModule', () => {
     expect(controllers).toEqual([]);
   });
 
-  it('should not have any providers', () => {
+  it('should register the global InternalApiKeyGuard as its only provider', () => {
     const providers: any[] = Reflect.getMetadata('providers', AppModule) || [];
-    expect(providers).toEqual([]);
+    expect(providers).toHaveLength(1);
+    expect(providers[0]).toMatchObject({ provide: APP_GUARD });
   });
 
   it('should have correct imports in module metadata', () => {

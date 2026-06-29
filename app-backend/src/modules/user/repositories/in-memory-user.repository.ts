@@ -108,6 +108,18 @@ export class InMemoryUserRepository implements UserRepository {
     );
   }
 
+  async findByExternalIntegrationUser(
+    externalIntegrationUser: string,
+  ): Promise<UserWithRelations | null> {
+    const user = this.users.find(
+      (u) => u.externalIntegrationUser === externalIntegrationUser,
+    );
+
+    return Promise.resolve(
+      user ? this.buildUserWithRelations(user.userId) : null,
+    );
+  }
+
   async update(
     userId: string,
     data: UpdateUserDto,

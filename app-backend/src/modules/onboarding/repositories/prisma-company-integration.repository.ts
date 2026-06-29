@@ -26,4 +26,14 @@ export class PrismaCompanyIntegrationRepository
       where: { companyId_provider: { companyId, provider } },
     });
   }
+
+  async update(
+    integrationId: string,
+    data: Prisma.CompanyIntegrationUncheckedUpdateInput,
+  ): Promise<CompanyIntegration> {
+    return this.prismaService.getClient().companyIntegration.update({
+      where: { integrationId },
+      data,
+    });
+  }
 }

@@ -1,18 +1,20 @@
 @baseUrl = http://localhost:3012
 @userId = 00000000-0000-4000-a000-000000000001
+@companyId = 00000000-0000-4000-a000-000000000099
 
 ### Create a new user
+# companyIds is required for any role other than ADMINISTRATOR.
 POST {{baseUrl}}/user
 Content-Type: application/json
 
 {
-  "name": "John Doe",
-  "email": "john.doe@example.com",
-  "externalIntegrationUser": "johndoe_ext",
-  "role": "APPROVER",
+  "name": "Clauber Correia",
+  "email": "clauber.correia@eletrofrio.com.br",
+  "externalIntegrationUser": "clauber.correia@eletrofrio.com.br",
+  "role": "ADMINISTRATOR",
   "active": true,
-  "approvalLimit": 5000,
-  "companyIds": [],
+  "approvalLimit": null,
+  "companyIds": null,
   "substituteIds": []
 }
 

@@ -8,4 +8,8 @@ export abstract class CompanyIntegrationRepository {
     companyId: string,
     provider: CompanyIntegration['provider'],
   ): Promise<CompanyIntegration | null>;
+  abstract update(
+    integrationId: string,
+    data: Prisma.CompanyIntegrationUncheckedUpdateInput,
+  ): Promise<CompanyIntegration>;
 }
