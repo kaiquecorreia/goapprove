@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
-import { navigationGroups } from '@/config/navigation';
+import { EUserRole, navigationGroups } from '@/config/navigation';
 import { getPurchaseOrders } from '@/services/purchaseOrders';
 import { cx } from '@/lib/cx';
 import Logo from '@/components/Logo';
@@ -16,7 +17,16 @@ interface AppSidebarProps {
 
 export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const role = session?.role as EUserRole | undefined;
   const pendingCount = getPurchaseOrders().filter((order) => order.status === 'pending').length;
+
+  const visibleGroups = navigationGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => role && item.allowedRoles.includes(role)),
+    }))
+    .filter((group) => group.items.length > 0);
 
   return (
     <aside className={cx(styles.sidebar, collapsed && styles.collapsed)}>
@@ -33,7 +43,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
       </div>
 
       <nav className={styles.nav}>
-        {navigationGroups.map((group) => (
+        {visibleGroups.map((group) => (
           <div key={group.label} className={styles.group}>
             {!collapsed && <span className={styles.groupLabel}>{group.label}</span>}
             <ul className={styles.items}>

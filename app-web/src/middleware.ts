@@ -1,19 +1,36 @@
 import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
 
-import { ERoutePath, isPublicPath } from './config/navigation';
+import {
+  ERoutePath,
+  EUserRole,
+  ROLE_DEFAULT_ROUTE,
+  canAccessRoute,
+  isPrivatePath,
+  isPublicPath,
+} from './config/navigation';
 
 export default withAuth(
   function middleware(req) {
     const { pathname } = req.nextUrl;
     const isAuthenticated = !!req.nextauth.token;
+    const role = req.nextauth.token?.role as EUserRole | undefined;
 
     if (pathname === ERoutePath.LOGIN && isAuthenticated) {
       return NextResponse.redirect(new URL('/', req.url));
     }
 
-    if (pathname === ERoutePath.ONBOARDING && req.nextauth.token?.role !== 'OWNER') {
+    if (pathname === ERoutePath.ONBOARDING && role !== EUserRole.OWNER) {
       return NextResponse.redirect(new URL('/', req.url));
+    }
+
+    if (
+      role &&
+      pathname !== ERoutePath.ONBOARDING &&
+      isPrivatePath(pathname) &&
+      !canAccessRoute(role, pathname)
+    ) {
+      return NextResponse.redirect(new URL(ROLE_DEFAULT_ROUTE[role], req.url));
     }
 
     return NextResponse.next();
