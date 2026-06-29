@@ -9,9 +9,9 @@ Content-Type: application/json
 
 {
   "name": "Clauber Correia",
-  "email": "clauber.correia@eletrofrio.com.br",
-  "externalIntegrationUser": "clauber.correia@eletrofrio.com.br",
-  "role": "ADMINISTRATOR",
+  "email": "clauber.correia@goapprove.com.br",
+  "externalIntegrationUser": "clauber.correia@goapprove.com.br",
+  "role": "OWNER",
   "active": true,
   "approvalLimit": null,
   "companyIds": null,

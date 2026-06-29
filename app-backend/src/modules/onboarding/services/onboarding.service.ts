@@ -131,7 +131,10 @@ export class OnboardingService {
   }
 
   async updateCompanyIntegration(companyId: string, dto: UpdateIntegrationDto) {
-    await this.assertOwnerOfCompany(companyId, dto.actingExternalIntegrationUser);
+    await this.assertOwnerOfCompany(
+      companyId,
+      dto.actingExternalIntegrationUser,
+    );
 
     const integration =
       await this.companyIntegrationRepository.findByCompanyAndProvider(
