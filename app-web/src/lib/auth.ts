@@ -24,9 +24,8 @@ export interface InforIntegrationConfig {
 
 interface InforProfile {
   sub: string;
-  email?: string;
+  preferred_username?: string;
   name?: string;
-  tenant?: string;
 }
 
 export async function fetchInforIntegrationConfig(
@@ -135,7 +134,7 @@ export async function buildDynamicAuthOptions(): Promise<NextAuthOptions> {
           return {
             id: decoded.sub,
             name: decoded.name ?? decoded.sub,
-            email: decoded.email ?? null,
+            email: decoded.preferred_username ?? null,
           };
         },
         clientId: integration?.clientId,
@@ -155,8 +154,8 @@ export async function buildDynamicAuthOptions(): Promise<NextAuthOptions> {
         // /login/infor before the OAuth redirect, so an attacker can't look up
         // a valid `externalIntegrationUser` and then authenticate as someone else.
         if (
-          !inforProfile?.email ||
-          inforProfile.email.toLowerCase() !== loginContext.email.toLowerCase()
+          !inforProfile?.preferred_username ||
+          inforProfile.preferred_username.toLowerCase() !== loginContext.email.toLowerCase()
         ) {
           return false;
         }
