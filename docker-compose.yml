@@ -17,6 +17,39 @@ services:
       timeout: 5s
       retries: 5
 
+  app-backend:
+    build:
+      context: .
+      dockerfile: app-backend/Dockerfile.dev
+    container_name: goapprove_backend
+    restart: unless-stopped
+    ports:
+      - "3012:3012"
+    env_file:
+      - ./app-backend/.env
+    volumes:
+      - ./app-backend/src:/app/app-backend/src
+      - ./app-backend/prisma:/app/app-backend/prisma
+    depends_on:
+      goapprove-postgres:
+        condition: service_healthy
+
+  app-web:
+    build:
+      context: .
+      dockerfile: app-web/Dockerfile.dev
+    container_name: goapprove_web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./app-web/src:/app/app-web/src
+      - ./app-web/public:/app/app-web/public
+    env_file:
+      - ./app-web/.env.local
+    depends_on:
+      - app-backend
+
 volumes:
   goapprove_postgres_data:
     driver: local

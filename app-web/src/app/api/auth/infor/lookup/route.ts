@@ -50,6 +50,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    console.error(error);
+
     return NextResponse.json(
       { message: 'Erro ao validar usuário. Tente novamente.' },
       { status: 500 },

@@ -17,7 +17,7 @@ export async function bootstrap() {
   );
 
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3002',
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
@@ -40,7 +40,7 @@ export async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
-  console.log('Starting GoApprove API on port', process.env.PORT ?? 3012);
+  console.log('Starting GoApprove API on port: ', process.env.PORT ?? 3012);
   await app.listen(process.env.PORT ?? 3012);
 }
 bootstrap()
