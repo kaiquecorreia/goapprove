@@ -1,0 +1,227 @@
+@baseUrl = http://localhost:3012
+@apiKey = d4ad57c970c464a0de00b5b362a3a1164a7657110082f2b9ac28f4f551cdb360
+
+### Receive a purchase order from INFOR_LN (happy path)
+POST {{baseUrl}}/purchase-orders
+Content-Type: application/json
+x-internal-api-key: {{apiKey}}
+
+{
+  "sourceSystem": "INFOR_LN",
+  "eventType": "PURCHASE_ORDER_SUBMITTED_FOR_APPROVAL",
+  "schemaVersion": "1.0",
+  "sentAt": "2026-06-16T10:30:00-03:00",
+  "company": {
+    "code": "E2E_TEST_001",
+    "name": "Empresa Matriz"
+  },
+  "purchaseOrder": {
+    "orderNumber": "OC-2026-000123",
+    "revision": 1,
+    "orderType": "NORMAL",
+    "statusLn": "PENDING_APPROVAL",
+    "createdAt": "2026-06-16T09:55:00-03:00",
+    "buyerCode": "COMP001",
+    "buyerName": "João Comprador",
+    "requesterCode": "REQ045",
+    "requesterName": "Maria Solicitante",
+    "supplierCode": "FORN00077",
+    "supplierName": "Fornecedor Exemplo Ltda",
+    "currency": "BRL",
+    "totalAmount": 12500.75,
+    "paymentTerms": "30D",
+    "costCenter": "CC-1001",
+    "department": "Compras",
+    "projectCode": "PRJ-2026-01",
+    "warehouse": "ALM-01",
+    "additionalFields": {
+      "category": "MRO",
+      "urgency": "NORMAL",
+      "purchaseGroup": "INDIRETOS"
+    }
+  },
+  "lines": [
+    {
+      "lineNumber": 10,
+      "itemCode": "MAT-0001",
+      "itemDescription": "Material de manutenção",
+      "quantity": 10,
+      "unitOfMeasure": "UN",
+      "unitPrice": 500.00,
+      "lineAmount": 5000.00,
+      "costCenter": "CC-1001",
+      "category": "MRO",
+      "deliveryDate": "2026-06-30"
+    },
+    {
+      "lineNumber": 20,
+      "itemCode": "SERV-0099",
+      "itemDescription": "Serviço técnico especializado",
+      "quantity": 1,
+      "unitOfMeasure": "SV",
+      "unitPrice": 7500.75,
+      "lineAmount": 7500.75,
+      "costCenter": "CC-1001",
+      "category": "SERVICOS",
+      "deliveryDate": "2026-07-05"
+    }
+  ]
+}
+
+### Reenvio da mesma OC (deve retornar 201 e criar um segundo registro)
+POST {{baseUrl}}/purchase-orders
+Content-Type: application/json
+x-internal-api-key: {{apiKey}}
+
+{
+  "sourceSystem": "INFOR_LN",
+  "eventType": "PURCHASE_ORDER_SUBMITTED_FOR_APPROVAL",
+  "schemaVersion": "1.0",
+  "sentAt": "2026-06-16T11:00:00-03:00",
+  "company": {
+    "code": "E2E_TEST_001",
+    "name": "Empresa Matriz"
+  },
+  "purchaseOrder": {
+    "orderNumber": "OC-2026-000123",
+    "revision": 1,
+    "orderType": "NORMAL",
+    "statusLn": "PENDING_APPROVAL",
+    "createdAt": "2026-06-16T09:55:00-03:00",
+    "buyerCode": "COMP001",
+    "buyerName": "João Comprador",
+    "requesterCode": "REQ045",
+    "requesterName": "Maria Solicitante",
+    "supplierCode": "FORN00077",
+    "supplierName": "Fornecedor Exemplo Ltda",
+    "currency": "BRL",
+    "totalAmount": 15000.00,
+    "paymentTerms": "30D",
+    "costCenter": "CC-1001",
+    "department": "Compras",
+    "projectCode": "PRJ-2026-01",
+    "warehouse": "ALM-01",
+    "additionalFields": {
+      "category": "MRO",
+      "urgency": "HIGH",
+      "purchaseGroup": "INDIRETOS"
+    }
+  },
+  "lines": [
+    {
+      "lineNumber": 10,
+      "itemCode": "MAT-0001",
+      "itemDescription": "Material de manutenção",
+      "quantity": 10,
+      "unitOfMeasure": "UN",
+      "unitPrice": 500.00,
+      "lineAmount": 5000.00,
+      "costCenter": "CC-1001",
+      "category": "MRO",
+      "deliveryDate": "2026-06-30"
+    },
+    {
+      "lineNumber": 20,
+      "itemCode": "SERV-0099",
+      "itemDescription": "Serviço técnico especializado",
+      "quantity": 1,
+      "unitOfMeasure": "SV",
+      "unitPrice": 10000.00,
+      "lineAmount": 10000.00,
+      "costCenter": "CC-1001",
+      "category": "SERVICOS",
+      "deliveryDate": "2026-07-05"
+    }
+  ]
+}
+
+### Erro: company não cadastrada (esperado 404)
+POST {{baseUrl}}/purchase-orders
+Content-Type: application/json
+x-internal-api-key: {{apiKey}}
+
+{
+  "sourceSystem": "INFOR_LN",
+  "eventType": "PURCHASE_ORDER_SUBMITTED_FOR_APPROVAL",
+  "schemaVersion": "1.0",
+  "sentAt": "2026-06-16T10:30:00-03:00",
+  "company": {
+    "code": "INEXISTENTE"
+  },
+  "purchaseOrder": {
+    "orderNumber": "OC-2026-000999",
+    "revision": 1,
+    "orderType": "NORMAL",
+    "statusLn": "PENDING_APPROVAL",
+    "createdAt": "2026-06-16T09:55:00-03:00",
+    "totalAmount": 100.00
+  },
+  "lines": [
+    {
+      "lineNumber": 10,
+      "itemCode": "MAT-0001",
+      "itemDescription": "Item teste",
+      "quantity": 1,
+      "unitOfMeasure": "UN",
+      "unitPrice": 100.00,
+      "lineAmount": 100.00
+    }
+  ]
+}
+
+### Erro: sem autenticação (esperado 401)
+POST {{baseUrl}}/purchase-orders
+Content-Type: application/json
+
+{
+  "sourceSystem": "INFOR_LN",
+  "eventType": "PURCHASE_ORDER_SUBMITTED_FOR_APPROVAL",
+  "schemaVersion": "1.0",
+  "sentAt": "2026-06-16T10:30:00-03:00",
+  "company": {
+    "code": "001"
+  },
+  "purchaseOrder": {
+    "orderNumber": "OC-2026-000123",
+    "revision": 1,
+    "orderType": "NORMAL",
+    "statusLn": "PENDING_APPROVAL",
+    "createdAt": "2026-06-16T09:55:00-03:00",
+    "totalAmount": 100.00
+  },
+  "lines": [
+    {
+      "lineNumber": 10,
+      "itemCode": "MAT-0001",
+      "itemDescription": "Item teste",
+      "quantity": 1,
+      "unitOfMeasure": "UN",
+      "unitPrice": 100.00,
+      "lineAmount": 100.00
+    }
+  ]
+}
+
+### Erro: payload inválido - sem linhas (esperado 400)
+POST {{baseUrl}}/purchase-orders
+Content-Type: application/json
+x-internal-api-key: {{apiKey}}
+
+{
+  "sourceSystem": "INFOR_LN",
+  "eventType": "PURCHASE_ORDER_SUBMITTED_FOR_APPROVAL",
+  "schemaVersion": "1.0",
+  "sentAt": "2026-06-16T10:30:00-03:00",
+  "company": {
+    "code": "001"
+  },
+  "purchaseOrder": {
+    "orderNumber": "OC-2026-000123",
+    "revision": 1,
+    "orderType": "NORMAL",
+    "statusLn": "PENDING_APPROVAL",
+    "createdAt": "2026-06-16T09:55:00-03:00",
+    "totalAmount": 100.00
+  },
+  "lines": []
+}

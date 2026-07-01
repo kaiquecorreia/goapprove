@@ -43,6 +43,7 @@ model Company {
 
   users                      CompanyUser[]
   integrations               CompanyIntegration[]
+  purchaseOrders             PurchaseOrder[]
 
   @@map("companies")
 }
@@ -89,6 +90,68 @@ model UserSubstitute {
 
   @@id([userId, substituteId])
   @@map("users_substitutes")
+}
+
+model PurchaseOrder {
+  purchaseOrderId  String   @id @default(uuid()) @map("purchase_order_id") @db.Uuid
+  companyId        String   @map("company_id") @db.Uuid
+
+  sourceSystem     String   @map("source_system") @db.VarChar(50)
+  eventType        String   @map("event_type") @db.VarChar(100)
+  schemaVersion    String   @map("schema_version") @db.VarChar(20)
+  sentAt           DateTime @map("sent_at")
+
+  orderNumber      String   @map("order_number") @db.VarChar(50)
+  revision         Int      @map("revision")
+  orderType        String   @map("order_type") @db.VarChar(50)
+  statusLn         String   @map("status_ln") @db.VarChar(50)
+  erpCreatedAt     DateTime @map("erp_created_at")
+  buyerCode        String?  @map("buyer_code") @db.VarChar(50)
+  buyerName        String?  @map("buyer_name") @db.VarChar(150)
+  requesterCode    String?  @map("requester_code") @db.VarChar(50)
+  requesterName    String?  @map("requester_name") @db.VarChar(150)
+  supplierCode     String?  @map("supplier_code") @db.VarChar(50)
+  supplierName     String?  @map("supplier_name") @db.VarChar(150)
+  currency         String?  @map("currency") @db.VarChar(10)
+  totalAmount      Decimal  @map("total_amount") @db.Decimal(15, 2)
+  paymentTerms     String?  @map("payment_terms") @db.VarChar(50)
+  costCenter       String?  @map("cost_center") @db.VarChar(50)
+  department       String?  @map("department") @db.VarChar(150)
+  projectCode      String?  @map("project_code") @db.VarChar(50)
+  warehouse        String?  @map("warehouse") @db.VarChar(50)
+  additionalFields Json?    @map("additional_fields")
+
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  company          Company             @relation(fields: [companyId], references: [companyId], onDelete: Cascade)
+  lines            PurchaseOrderLine[]
+
+  @@index([companyId, orderNumber])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderLine {
+  purchaseOrderLineId String    @id @default(uuid()) @map("purchase_order_line_id") @db.Uuid
+  purchaseOrderId     String    @map("purchase_order_id") @db.Uuid
+
+  lineNumber          Int       @map("line_number")
+  itemCode            String    @map("item_code") @db.VarChar(50)
+  itemDescription     String    @map("item_description") @db.VarChar(255)
+  quantity            Decimal   @map("quantity") @db.Decimal(15, 4)
+  unitOfMeasure       String    @map("unit_of_measure") @db.VarChar(10)
+  unitPrice           Decimal   @map("unit_price") @db.Decimal(15, 4)
+  lineAmount          Decimal   @map("line_amount") @db.Decimal(15, 2)
+  costCenter          String?   @map("cost_center") @db.VarChar(50)
+  category            String?   @map("category") @db.VarChar(100)
+  deliveryDate        DateTime? @map("delivery_date") @db.Date
+
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  purchaseOrder       PurchaseOrder @relation(fields: [purchaseOrderId], references: [purchaseOrderId], onDelete: Cascade)
+
+  @@unique([purchaseOrderId, lineNumber])
+  @@map("purchase_order_lines")
 }
 
 model CompanyIntegration {

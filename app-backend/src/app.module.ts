@@ -6,6 +6,7 @@ import { HealthModule } from './modules/health/health.module';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
+import { PurchaseOrderModule } from './modules/purchase-order/purchase-order.module';
 import { InternalApiKeyGuard } from './shared/guards/internal-api-key.guard';
 
 @Module({
@@ -15,6 +16,7 @@ import { InternalApiKeyGuard } from './shared/guards/internal-api-key.guard';
     CompanyModule,
     AuthModule,
     OnboardingModule,
+    PurchaseOrderModule,
   ],
   controllers: [],
   providers: [{ provide: APP_GUARD, useClass: InternalApiKeyGuard }],
