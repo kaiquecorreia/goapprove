@@ -1,31 +1,59 @@
 'use client';
 
-import { Control, UseFormRegister, useFieldArray, useWatch } from 'react-hook-form';
+import { useEffect, useRef } from 'react';
+import {
+  Control,
+  UseFormRegister,
+  UseFormSetValue,
+  useFieldArray,
+  useWatch,
+} from 'react-hook-form';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
-import { RULE_OPERATORS, RULE_SOURCE_TYPES } from '@/lib/mock/rules';
+import {
+  RULE_FIELD_EXAMPLES,
+  RULE_FIELDS_BY_SOURCE,
+  RULE_OPERATORS,
+  RULE_SOURCE_TYPES,
+} from '@/lib/mock/rules';
 import type { RuleFormData } from '@/app/rules/schema';
 import styles from './styles.module.scss';
 
 interface CriteriaBuilderProps {
   control: Control<RuleFormData>;
   register: UseFormRegister<RuleFormData>;
+  setValue: UseFormSetValue<RuleFormData>;
 }
 
 interface CriterionRowProps {
   control: Control<RuleFormData>;
   register: UseFormRegister<RuleFormData>;
+  setValue: UseFormSetValue<RuleFormData>;
   index: number;
   onRemove: () => void;
 }
 
-function CriterionRow({ control, register, index, onRemove }: CriterionRowProps) {
+function CriterionRow({ control, register, setValue, index, onRemove }: CriterionRowProps) {
   const operator = useWatch({ control, name: `criteria.${index}.operator` });
+  const sourceType = useWatch({ control, name: `criteria.${index}.sourceType` });
   const showBetween = operator === 'BETWEEN';
   const showList = operator === 'IN_LIST' || operator === 'NOT_IN_LIST';
   const showValue = !showBetween && !showList && operator !== 'EXISTS' && operator !== 'NOT_EXISTS';
+  const fieldOptions =
+    sourceType === 'PO_HEADER' || sourceType === 'PO_LINE'
+      ? RULE_FIELDS_BY_SOURCE[sourceType]
+      : null;
+
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    setValue(`criteria.${index}.field`, '');
+  }, [sourceType, index, setValue]);
 
   return (
     <div className={styles.criterionCard}>
@@ -47,7 +75,18 @@ function CriterionRow({ control, register, index, onRemove }: CriterionRowProps)
           placeholder="Origem"
           {...register(`criteria.${index}.sourceType`)}
         />
-        <Input placeholder="Campo (ex: totalAmount)" {...register(`criteria.${index}.field`)} />
+        {fieldOptions ? (
+          <Select
+            options={fieldOptions}
+            placeholder="Campo"
+            {...register(`criteria.${index}.field`)}
+          />
+        ) : (
+          <Input
+            placeholder={RULE_FIELD_EXAMPLES.PO_ADDITIONAL}
+            {...register(`criteria.${index}.field`)}
+          />
+        )}
         <Select
           options={RULE_OPERATORS}
           placeholder="Operador"
@@ -71,7 +110,7 @@ function CriterionRow({ control, register, index, onRemove }: CriterionRowProps)
   );
 }
 
-export function CriteriaBuilder({ control, register }: CriteriaBuilderProps) {
+export function CriteriaBuilder({ control, register, setValue }: CriteriaBuilderProps) {
   const { fields, append, remove } = useFieldArray({ control, name: 'criteria' });
 
   return (
@@ -81,6 +120,7 @@ export function CriteriaBuilder({ control, register }: CriteriaBuilderProps) {
           key={field.id}
           control={control}
           register={register}
+          setValue={setValue}
           index={index}
           onRemove={() => remove(index)}
         />

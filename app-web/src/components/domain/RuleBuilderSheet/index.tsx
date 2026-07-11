@@ -40,6 +40,7 @@ export function RuleBuilderSheet({ trigger, companies, users }: RuleBuilderSheet
     control,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<RuleFormData>({
     resolver: zodResolver(ruleSchema),
@@ -183,7 +184,7 @@ export function RuleBuilderSheet({ trigger, companies, users }: RuleBuilderSheet
 
           <div>
             <Label>Critérios</Label>
-            <CriteriaBuilder control={control} register={register} />
+            <CriteriaBuilder control={control} register={register} setValue={setValue} />
             {errors.criteria?.message && (
               <span style={{ color: 'var(--color-error)', fontSize: '0.8rem' }}>
                 {errors.criteria.message}
