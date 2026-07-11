@@ -1,0 +1,40 @@
+@baseUrl = http://localhost:3012
+@apiKey = d4ad57c970c464a0de00b5b362a3a1164a7657110082f2b9ac28f4f551cdb360
+@token = REPLACE_WITH_ACCESS_TOKEN_FROM_AUTH_CALLBACK
+
+### List my pending approvals
+GET {{baseUrl}}/workflows/pending
+x-internal-api-key: {{apiKey}}
+Authorization: Bearer {{token}}
+
+### Get the workflow for a purchase order
+GET {{baseUrl}}/workflows/REPLACE_WITH_PURCHASE_ORDER_ID
+x-internal-api-key: {{apiKey}}
+Authorization: Bearer {{token}}
+
+### Approve the current level
+POST {{baseUrl}}/workflows/REPLACE_WITH_PURCHASE_ORDER_ID/decisions
+Content-Type: application/json
+x-internal-api-key: {{apiKey}}
+Authorization: Bearer {{token}}
+
+{
+  "decision": "APPROVED",
+  "comment": "Looks good"
+}
+
+### Reject the current level (comment required by default)
+POST {{baseUrl}}/workflows/REPLACE_WITH_PURCHASE_ORDER_ID/decisions
+Content-Type: application/json
+x-internal-api-key: {{apiKey}}
+Authorization: Bearer {{token}}
+
+{
+  "decision": "REJECTED",
+  "comment": "Budget exceeded for this cost center"
+}
+
+### Retry LN sync after a failure
+POST {{baseUrl}}/workflows/REPLACE_WITH_PURCHASE_ORDER_ID/ln-sync/retry
+x-internal-api-key: {{apiKey}}
+Authorization: Bearer {{token}}

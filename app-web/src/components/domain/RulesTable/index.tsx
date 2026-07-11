@@ -8,13 +8,21 @@ import {
   TableRow,
 } from '@/components/ui/Table';
 import { formatDate } from '@/lib/format/date';
+import { CONFLICT_STRATEGIES, RULE_OPERATORS } from '@/lib/mock/rules';
 import type { Rule } from '@/lib/mock/types';
+
+const operatorLabel = (operator: string) =>
+  RULE_OPERATORS.find((option) => option.value === operator)?.label ?? operator;
+
+const conflictStrategyLabel = (strategy: string) =>
+  CONFLICT_STRATEGIES.find((option) => option.value === strategy)?.label ?? strategy;
 
 export function RulesTable({ rules }: { rules: Rule[] }) {
   return (
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead>Código</TableHead>
           <TableHead>Nome</TableHead>
           <TableHead align="right">Prioridade</TableHead>
           <TableHead>Vigência</TableHead>
@@ -26,6 +34,7 @@ export function RulesTable({ rules }: { rules: Rule[] }) {
       <TableBody>
         {rules.map((rule) => (
           <TableRow key={rule.id}>
+            <TableCell>{rule.code}</TableCell>
             <TableCell>{rule.name}</TableCell>
             <TableCell align="right">{rule.priority}</TableCell>
             <TableCell>
@@ -36,12 +45,13 @@ export function RulesTable({ rules }: { rules: Rule[] }) {
               <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
                 {rule.criteria.map((criterion, index) => (
                   <Badge key={index} variant="outline">
-                    {criterion.field} {criterion.operator} {criterion.value}
+                    {criterion.field} {operatorLabel(criterion.operator)}{' '}
+                    {criterion.value ?? criterion.valueList?.join(', ') ?? ''}
                   </Badge>
                 ))}
               </div>
             </TableCell>
-            <TableCell>{rule.conflictStrategy}</TableCell>
+            <TableCell>{conflictStrategyLabel(rule.conflictStrategy)}</TableCell>
             <TableCell>
               <Badge variant={rule.status === 'Ativa' ? 'success' : 'secondary'}>
                 {rule.status}

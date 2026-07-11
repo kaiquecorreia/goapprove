@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { Provider } from '@prisma/client';
 
 import { UserRepository } from '../../user/repositories/user.repository';
@@ -15,7 +16,38 @@ export class AuthService {
     private readonly companyUserRepository: CompanyUserRepository,
     private readonly companyIntegrationRepository: CompanyIntegrationRepository,
     private readonly cryptoService: CryptoService,
+    private readonly jwtService: JwtService,
   ) {}
+
+  async issueSessionToken(externalIntegrationUser: string) {
+    const user = await this.userRepository.findByExternalIntegrationUser(
+      externalIntegrationUser,
+    );
+
+    if (!user || !user.active) {
+      throw new NotFoundException(NOT_FOUND_MESSAGE);
+    }
+
+    const companyUsers = await this.companyUserRepository.findByUserId(
+      user.userId,
+    );
+    const defaultCompanyUser = companyUsers.find((cu) => cu.isDefault);
+
+    const accessToken = await this.jwtService.signAsync({
+      sub: user.userId,
+      role: user.role,
+      email: user.email,
+      companyId: defaultCompanyUser?.companyId,
+    });
+
+    return {
+      accessToken,
+      userId: user.userId,
+      role: user.role,
+      email: user.email,
+      companyId: defaultCompanyUser?.companyId,
+    };
+  }
 
   async getIntegrationConfig(externalIntegrationUser: string) {
     const user = await this.userRepository.findByExternalIntegrationUser(

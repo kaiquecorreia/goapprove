@@ -44,6 +44,7 @@ model Company {
   users                      CompanyUser[]
   integrations               CompanyIntegration[]
   purchaseOrders             PurchaseOrder[]
+  rules                      Rule[]
 
   @@map("companies")
 }
@@ -62,6 +63,11 @@ model User {
   companies               CompanyUser[]
   substitutes             UserSubstitute[] @relation("UserAsOriginal")
   substitutedBy           UserSubstitute[] @relation("UserAsSubstitute")
+  ruleLevelApprovals      RuleLevelApprover[]
+  workflowApprovals       ApprovalWorkflowApprover[]
+  assignedDecisions       ApprovalDecision[] @relation("DecisionAssignedUser")
+  actedDecisions          ApprovalDecision[] @relation("DecisionActingUser")
+  auditedEvents           WorkflowAuditEvent[]
 
   @@map("users")
 }
@@ -120,12 +126,14 @@ model PurchaseOrder {
   projectCode      String?  @map("project_code") @db.VarChar(50)
   warehouse        String?  @map("warehouse") @db.VarChar(50)
   additionalFields Json?    @map("additional_fields")
+  status           PurchaseOrderStatus @default(PENDING) @map("status")
 
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
   company          Company             @relation(fields: [companyId], references: [companyId], onDelete: Cascade)
   lines            PurchaseOrderLine[]
+  workflow         ApprovalWorkflow?
 
   @@index([companyId, orderNumber])
   @@map("purchase_orders")
@@ -171,4 +179,238 @@ model CompanyIntegration {
 
   @@unique([companyId, provider])
   @@map("company_integrations")
+}
+
+enum RuleStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ApprovalMode {
+  ANY
+  ALL
+  SEQUENTIAL
+}
+
+enum RuleConflictStrategy {
+  HIGHEST_PRIORITY
+  MOST_RESTRICTIVE
+  FIRST_MATCH
+}
+
+enum RuleConditionSourceType {
+  PO_HEADER
+  PO_LINE
+  PO_ADDITIONAL
+  MANUAL_FIELD
+}
+
+enum RuleOperator {
+  EQUALS
+  NOT_EQUALS
+  GREATER_THAN
+  GREATER_THAN_OR_EQUAL
+  LESS_THAN
+  LESS_THAN_OR_EQUAL
+  BETWEEN
+  CONTAINS
+  IN_LIST
+  NOT_IN_LIST
+  EXISTS
+  NOT_EXISTS
+}
+
+model Rule {
+  ruleId           String               @id @default(uuid()) @map("rule_id") @db.Uuid
+  code             String               @unique @map("code") @db.VarChar(50)
+  name             String               @map("name") @db.VarChar(150)
+  description      String?              @map("description") @db.Text
+  companyId        String               @map("company_id") @db.Uuid
+  priority         Int                  @map("priority")
+  validFrom        DateTime             @map("valid_from") @db.Date
+  validTo          DateTime?            @map("valid_to") @db.Date
+  status           RuleStatus           @default(ACTIVE) @map("status")
+  conflictStrategy RuleConflictStrategy @default(HIGHEST_PRIORITY) @map("conflict_strategy")
+  createdAt        DateTime             @default(now()) @map("created_at")
+  updatedAt        DateTime             @updatedAt @map("updated_at")
+
+  company          Company        @relation(fields: [companyId], references: [companyId], onDelete: Restrict)
+  conditions       RuleCondition[]
+  levels           RuleLevel[]
+  workflows        ApprovalWorkflow[]
+
+  @@index([companyId, status])
+  @@index([companyId, priority])
+  @@map("rules")
+}
+
+model RuleCondition {
+  ruleConditionId String                  @id @default(uuid()) @map("rule_condition_id") @db.Uuid
+  ruleId          String                  @map("rule_id") @db.Uuid
+  sourceType      RuleConditionSourceType @map("source_type")
+  field           String                  @map("field") @db.VarChar(100)
+  operator        RuleOperator            @map("operator")
+  value           String?                 @map("value") @db.Text
+  valueTo         String?                 @map("value_to") @db.Text
+  valueList       Json?                   @map("value_list")
+  createdAt       DateTime                @default(now()) @map("created_at")
+
+  rule            Rule @relation(fields: [ruleId], references: [ruleId], onDelete: Cascade)
+
+  @@index([ruleId])
+  @@map("rule_conditions")
+}
+
+model RuleLevel {
+  ruleLevelId String       @id @default(uuid()) @map("rule_level_id") @db.Uuid
+  ruleId      String       @map("rule_id") @db.Uuid
+  levelNumber Int          @map("level_number")
+  mode        ApprovalMode @map("mode")
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  rule      Rule                @relation(fields: [ruleId], references: [ruleId], onDelete: Cascade)
+  approvers RuleLevelApprover[]
+
+  @@unique([ruleId, levelNumber])
+  @@map("rule_levels")
+}
+
+model RuleLevelApprover {
+  ruleLevelId String   @map("rule_level_id") @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  ruleLevel RuleLevel @relation(fields: [ruleLevelId], references: [ruleLevelId], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [userId], onDelete: Restrict)
+
+  @@id([ruleLevelId, userId])
+  @@map("rule_level_approvers")
+}
+
+enum PurchaseOrderStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  NO_RULE
+  ERROR
+}
+
+enum WorkflowStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  NO_RULE
+  CANCELLED
+}
+
+enum LevelStatus {
+  LOCKED
+  PENDING
+  APPROVED
+  REJECTED
+  SKIPPED
+}
+
+enum DecisionType {
+  APPROVED
+  REJECTED
+}
+
+enum LnSyncStatus {
+  NOT_APPLICABLE
+  PENDING
+  SYNCED
+  FAILED
+}
+
+model ApprovalWorkflow {
+  workflowId              String         @id @default(uuid()) @map("workflow_id") @db.Uuid
+  purchaseOrderId         String         @unique @map("purchase_order_id") @db.Uuid
+  ruleId                  String?        @map("rule_id") @db.Uuid
+  status                  WorkflowStatus @default(PENDING) @map("status")
+  currentLevel            Int?           @map("current_level")
+  requireCommentOnApprove Boolean        @default(false) @map("require_comment_on_approve")
+  requireCommentOnReject  Boolean        @default(true) @map("require_comment_on_reject")
+  onRejectAction          String         @default("HALT") @map("on_reject_action") @db.VarChar(20)
+  finalizedAt             DateTime?      @map("finalized_at")
+  lnSyncStatus            LnSyncStatus   @default(NOT_APPLICABLE) @map("ln_sync_status")
+  lnSyncAttempts          Int            @default(0) @map("ln_sync_attempts")
+  lnLastError             String?        @map("ln_last_error") @db.Text
+  lnSyncedAt              DateTime?      @map("ln_synced_at")
+  createdAt               DateTime       @default(now()) @map("created_at")
+  updatedAt               DateTime       @updatedAt @map("updated_at")
+
+  purchaseOrder PurchaseOrder           @relation(fields: [purchaseOrderId], references: [purchaseOrderId], onDelete: Cascade)
+  rule          Rule?                   @relation(fields: [ruleId], references: [ruleId], onDelete: SetNull)
+  levels        ApprovalWorkflowLevel[]
+  auditEvents   WorkflowAuditEvent[]
+
+  @@map("approval_workflows")
+}
+
+model ApprovalWorkflowLevel {
+  levelId     String       @id @default(uuid()) @map("level_id") @db.Uuid
+  workflowId  String       @map("workflow_id") @db.Uuid
+  level       Int          @map("level")
+  mode        ApprovalMode @map("mode")
+  status      LevelStatus  @default(LOCKED) @map("status")
+  startedAt   DateTime?    @map("started_at")
+  completedAt DateTime?    @map("completed_at")
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  workflow  ApprovalWorkflow           @relation(fields: [workflowId], references: [workflowId], onDelete: Cascade)
+  approvers ApprovalWorkflowApprover[]
+  decisions ApprovalDecision[]
+
+  @@unique([workflowId, level])
+  @@map("approval_workflow_levels")
+}
+
+model ApprovalWorkflowApprover {
+  levelId       String      @map("level_id") @db.Uuid
+  userId        String      @map("user_id") @db.Uuid
+  sequenceOrder Int         @default(1) @map("sequence_order")
+  status        LevelStatus @default(PENDING) @map("status")
+  decidedAt     DateTime?   @map("decided_at")
+
+  level ApprovalWorkflowLevel @relation(fields: [levelId], references: [levelId], onDelete: Cascade)
+  user  User                  @relation(fields: [userId], references: [userId], onDelete: Restrict)
+
+  @@id([levelId, userId])
+  @@unique([levelId, sequenceOrder])
+  @@map("approval_workflow_approvers")
+}
+
+model ApprovalDecision {
+  decisionId     String       @id @default(uuid()) @map("decision_id") @db.Uuid
+  levelId        String       @map("level_id") @db.Uuid
+  assignedUserId String       @map("assigned_user_id") @db.Uuid
+  actingUserId   String       @map("acting_user_id") @db.Uuid
+  decision       DecisionType @map("decision")
+  comment        String?      @map("comment") @db.Text
+  decidedAt      DateTime     @default(now()) @map("decided_at")
+
+  level        ApprovalWorkflowLevel @relation(fields: [levelId], references: [levelId], onDelete: Cascade)
+  assignedUser User                  @relation("DecisionAssignedUser", fields: [assignedUserId], references: [userId], onDelete: Restrict)
+  actingUser   User                  @relation("DecisionActingUser", fields: [actingUserId], references: [userId], onDelete: Restrict)
+
+  @@map("approval_decisions")
+}
+
+model WorkflowAuditEvent {
+  eventId     String   @id @default(uuid()) @map("event_id") @db.Uuid
+  workflowId  String   @map("workflow_id") @db.Uuid
+  type        String   @map("type") @db.VarChar(50)
+  severity    String   @map("severity") @db.VarChar(20)
+  actorUserId String?  @map("actor_user_id") @db.Uuid
+  message     String   @map("message") @db.Text
+  metadata    Json?    @map("metadata")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  workflow ApprovalWorkflow @relation(fields: [workflowId], references: [workflowId], onDelete: Cascade)
+  actor    User?            @relation(fields: [actorUserId], references: [userId], onDelete: SetNull)
+
+  @@index([workflowId, createdAt])
+  @@map("workflow_audit_events")
 }

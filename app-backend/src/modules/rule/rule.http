@@ -1,0 +1,41 @@
+@baseUrl = http://localhost:3012
+@apiKey = d4ad57c970c464a0de00b5b362a3a1164a7657110082f2b9ac28f4f551cdb360
+@token = REPLACE_WITH_ACCESS_TOKEN_FROM_AUTH_CALLBACK
+
+### Create a rule: OC > 100k, 2 levels
+POST {{baseUrl}}/rules
+Content-Type: application/json
+x-internal-api-key: {{apiKey}}
+Authorization: Bearer {{token}}
+
+{
+  "code": "RULE-001",
+  "name": "OC acima de R$ 100k - 2 niveis",
+  "description": "Fast-track escalation for high-value purchase orders",
+  "companyId": "REPLACE_WITH_COMPANY_ID",
+  "priority": 10,
+  "validFrom": "2026-01-01",
+  "conflictStrategy": "HIGHEST_PRIORITY",
+  "conditions": [
+    { "sourceType": "PO_HEADER", "field": "totalAmount", "operator": "GREATER_THAN", "value": "100000" }
+  ],
+  "levels": [
+    { "levelNumber": 1, "mode": "ANY", "approverUserIds": ["REPLACE_WITH_USER_ID"] },
+    { "levelNumber": 2, "mode": "ALL", "approverUserIds": ["REPLACE_WITH_USER_ID"] }
+  ]
+}
+
+### List rules for a company
+GET {{baseUrl}}/rules?companyId=REPLACE_WITH_COMPANY_ID
+x-internal-api-key: {{apiKey}}
+Authorization: Bearer {{token}}
+
+### Get a rule by id
+GET {{baseUrl}}/rules/REPLACE_WITH_RULE_ID
+x-internal-api-key: {{apiKey}}
+Authorization: Bearer {{token}}
+
+### Deactivate a rule
+DELETE {{baseUrl}}/rules/REPLACE_WITH_RULE_ID
+x-internal-api-key: {{apiKey}}
+Authorization: Bearer {{token}}

@@ -100,23 +100,50 @@ export interface PurchaseOrder {
   comments: OcComment[];
 }
 
+export type RuleConditionSourceType = 'PO_HEADER' | 'PO_LINE' | 'PO_ADDITIONAL';
+
+export type RuleOperator =
+  | 'EQUALS'
+  | 'NOT_EQUALS'
+  | 'GREATER_THAN'
+  | 'GREATER_THAN_OR_EQUAL'
+  | 'LESS_THAN'
+  | 'LESS_THAN_OR_EQUAL'
+  | 'BETWEEN'
+  | 'CONTAINS'
+  | 'IN_LIST'
+  | 'NOT_IN_LIST'
+  | 'EXISTS'
+  | 'NOT_EXISTS';
+
 export interface RuleCriterion {
+  sourceType: RuleConditionSourceType;
   field: string;
-  operator: string;
-  value: string;
+  operator: RuleOperator;
+  value?: string;
+  valueTo?: string;
+  valueList?: string[];
+}
+
+export interface RuleLevelApprover {
+  userId: string;
+  name: string;
 }
 
 export interface RuleLevel {
   level: number;
   mode: ApprovalMode;
-  approvers: string[];
+  approvers: RuleLevelApprover[];
 }
 
-export type ConflictStrategy = 'Maior prioridade' | 'Mais restritiva' | 'Primeira encontrada';
+export type ConflictStrategy = 'HIGHEST_PRIORITY' | 'MOST_RESTRICTIVE' | 'FIRST_MATCH';
 
 export interface Rule {
   id: string;
+  code: string;
   name: string;
+  description?: string;
+  companyId: string;
   priority: number;
   validFrom: string;
   validTo?: string;

@@ -1,0 +1,587 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_POSTGRES",
+      "label": "PostgreSQL",
+      "description": "Datasource apontando para o banco goapprove",
+      "type": "datasource",
+      "pluginId": "postgres",
+      "pluginName": "PostgreSQL"
+    }
+  ],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "datasource", "id": "postgres", "name": "PostgreSQL", "version": "1.0.0" },
+    { "type": "panel", "id": "table", "name": "Table", "version": "" },
+    { "type": "panel", "id": "stat", "name": "Stat", "version": "" },
+    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" },
+    { "type": "panel", "id": "piechart", "name": "Pie chart", "version": "" },
+    { "type": "panel", "id": "barchart", "name": "Bar chart", "version": "" },
+    { "type": "panel", "id": "row", "name": "Row", "version": "" }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "panels": [],
+      "title": "Visão Geral",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "id": 2,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) AS \"Total de OCs\" FROM purchase_orders po JOIN companies c ON c.company_id = po.company_id WHERE c.name IN ($empresa)",
+          "refId": "A"
+        }
+      ],
+      "title": "Total de OCs",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "orange", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "id": 3,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) AS \"OCs Pendentes\" FROM purchase_orders po JOIN companies c ON c.company_id = po.company_id WHERE po.status = 'PENDING' AND c.name IN ($empresa)",
+          "refId": "A"
+        }
+      ],
+      "title": "OCs Pendentes",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "id": 4,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) AS \"OCs Aprovadas\" FROM purchase_orders po JOIN companies c ON c.company_id = po.company_id WHERE po.status = 'APPROVED' AND c.name IN ($empresa)",
+          "refId": "A"
+        }
+      ],
+      "title": "OCs Aprovadas",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "id": 5,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) AS \"OCs Rejeitadas\" FROM purchase_orders po JOIN companies c ON c.company_id = po.company_id WHERE po.status = 'REJECTED' AND c.name IN ($empresa)",
+          "refId": "A"
+        }
+      ],
+      "title": "OCs Rejeitadas",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "yellow", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "id": 6,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) AS \"Sem Regra Aplicável\" FROM purchase_orders po JOIN companies c ON c.company_id = po.company_id WHERE po.status = 'NO_RULE' AND c.name IN ($empresa)",
+          "refId": "A"
+        }
+      ],
+      "title": "Sem Regra Aplicável",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "id": 7,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(DISTINCT wf.workflow_id) AS \"Erros de Sinc. LN\" FROM approval_workflows wf JOIN purchase_orders po ON po.purchase_order_id = wf.purchase_order_id JOIN companies c ON c.company_id = po.company_id WHERE wf.ln_sync_status = 'FAILED' AND c.name IN ($empresa)",
+          "refId": "A"
+        }
+      ],
+      "title": "Erros de Sincronização LN",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "id": 8,
+      "panels": [],
+      "title": "OCs por Status",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisPlacement": "auto", "fillOpacity": 80, "gradientMode": "none", "lineWidth": 1, "orientation": "horizontal" }, "mappings": [] }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "id": 9,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" }, "xTickLabelRotation": 0 },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT c.name AS empresa, po.status, COUNT(*) AS total FROM purchase_orders po JOIN companies c ON c.company_id = po.company_id WHERE c.name IN ($empresa) GROUP BY c.name, po.status ORDER BY c.name, po.status",
+          "refId": "A"
+        }
+      ],
+      "title": "OCs por Empresa e Status",
+      "type": "barchart"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "mappings": [] }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "id": 10,
+      "options": { "displayLabels": ["percent"], "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] }, "pieType": "pie", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "tooltip": { "mode": "single" } },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT po.status, COUNT(*) AS total FROM purchase_orders po JOIN companies c ON c.company_id = po.company_id WHERE c.name IN ($empresa) GROUP BY po.status",
+          "refId": "A"
+        }
+      ],
+      "title": "Distribuição Geral de Status",
+      "type": "piechart"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "id": 11,
+      "panels": [],
+      "title": "Fila de Aprovação",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "fieldConfig": { "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "filterable": true } }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 15 },
+      "id": 12,
+      "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [{ "desc": false, "displayName": "started_at" }] },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT po.order_number, c.name AS empresa, po.total_amount, po.supplier_name, wf.status AS status_workflow, wf.current_level, wl.mode, u.name AS aprovador_pendente, wl.started_at FROM purchase_orders po JOIN companies c ON c.company_id = po.company_id JOIN approval_workflows wf ON wf.purchase_order_id = po.purchase_order_id JOIN approval_workflow_levels wl ON wl.workflow_id = wf.workflow_id AND wl.level = wf.current_level JOIN approval_workflow_approvers wa ON wa.level_id = wl.level_id AND wa.status = 'PENDING' JOIN users u ON u.user_id = wa.user_id WHERE wf.status = 'PENDING' AND c.name IN ($empresa) ORDER BY wl.started_at ASC",
+          "refId": "A"
+        }
+      ],
+      "title": "OCs Pendentes Agora (Nível/Aprovador Atual)",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "fieldConfig": { "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "filterable": true } }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 23 },
+      "id": 13,
+      "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [{ "desc": true, "displayName": "ocs_pendentes" }] },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT u.name AS aprovador, COUNT(*) AS ocs_pendentes, SUM(po.total_amount) AS valor_total_pendente FROM approval_workflow_approvers wa JOIN approval_workflow_levels wl ON wl.level_id = wa.level_id JOIN approval_workflows wf ON wf.workflow_id = wl.workflow_id JOIN purchase_orders po ON po.purchase_order_id = wf.purchase_order_id JOIN users u ON u.user_id = wa.user_id WHERE wa.status = 'PENDING' AND wf.status = 'PENDING' GROUP BY u.user_id, u.name ORDER BY ocs_pendentes DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "Carga de Trabalho Atual por Aprovador",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "fieldConfig": { "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "filterable": true } }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 23 },
+      "id": 14,
+      "options": { "cellHeight": "sm", "showHeader": true },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT DISTINCT po.order_number, po.total_amount, wf.current_level, wl.mode, u.name AS aprovador_titular FROM approval_workflow_approvers wa JOIN approval_workflow_levels wl ON wl.level_id = wa.level_id JOIN approval_workflows wf ON wf.workflow_id = wl.workflow_id JOIN purchase_orders po ON po.purchase_order_id = wf.purchase_order_id JOIN users u ON u.user_id = wa.user_id WHERE wa.status = 'PENDING' AND wf.status = 'PENDING' AND (wa.user_id IN ($aprovador) OR wa.user_id IN (SELECT user_id FROM users_substitutes WHERE substitute_id IN ($aprovador)))",
+          "refId": "A"
+        }
+      ],
+      "title": "Aprovações Pendentes por Usuário (titular + substituto)",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 31 },
+      "id": 15,
+      "panels": [],
+      "title": "Regras de Negócio",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "fieldConfig": { "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "filterable": true } }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 32 },
+      "id": 16,
+      "options": { "cellHeight": "sm", "showHeader": true },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT c.name AS empresa, r.code, r.name, r.priority, r.valid_from, r.valid_to, r.conflict_strategy, rc.source_type, rc.field, rc.operator, rc.value, rc.value_to, rc.value_list, rl.level_number, rl.mode, u.name AS aprovador FROM rules r JOIN companies c ON c.company_id = r.company_id LEFT JOIN rule_conditions rc ON rc.rule_id = r.rule_id LEFT JOIN rule_levels rl ON rl.rule_id = r.rule_id LEFT JOIN rule_level_approvers rla ON rla.rule_level_id = rl.rule_level_id LEFT JOIN users u ON u.user_id = rla.user_id WHERE r.status = 'ACTIVE' AND c.name IN ($empresa) ORDER BY c.name, r.priority, rl.level_number",
+          "refId": "A"
+        }
+      ],
+      "title": "Regras Ativas (Condições e Níveis)",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisPlacement": "auto", "fillOpacity": 80, "gradientMode": "none", "lineWidth": 1, "orientation": "horizontal" }, "mappings": [] }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 40 },
+      "id": 17,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" }, "xTickLabelRotation": 0 },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT r.code, COUNT(wf.workflow_id) AS total_ocs_aplicadas FROM approval_workflows wf JOIN rules r ON r.rule_id = wf.rule_id GROUP BY r.rule_id, r.code ORDER BY total_ocs_aplicadas DESC LIMIT 15",
+          "refId": "A"
+        }
+      ],
+      "title": "Ranking de Regras Mais Aplicadas",
+      "type": "barchart"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "fieldConfig": { "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "filterable": true } }, "overrides": [{ "matcher": { "id": "byName", "options": "taxa_aprovacao_pct" }, "properties": [{ "id": "unit", "value": "percent" }, { "id": "custom.cellOptions", "value": { "type": "color-background" } }] }] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 40 },
+      "id": 18,
+      "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [{ "desc": true, "displayName": "taxa_aprovacao_pct" }] },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT r.code, r.name, COUNT(*) FILTER (WHERE wf.status = 'APPROVED') AS aprovadas, COUNT(*) FILTER (WHERE wf.status = 'REJECTED') AS rejeitadas, COUNT(*) FILTER (WHERE wf.status = 'PENDING') AS pendentes, ROUND(100.0 * COUNT(*) FILTER (WHERE wf.status = 'APPROVED') / NULLIF(COUNT(*) FILTER (WHERE wf.status IN ('APPROVED','REJECTED')), 0), 2) AS taxa_aprovacao_pct FROM approval_workflows wf JOIN rules r ON r.rule_id = wf.rule_id GROUP BY r.rule_id, r.code, r.name ORDER BY taxa_aprovacao_pct DESC NULLS LAST",
+          "refId": "A"
+        }
+      ],
+      "title": "Taxa de Aprovação x Rejeição por Regra",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 48 },
+      "id": 19,
+      "panels": [],
+      "title": "Performance / SLA",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "fieldConfig": { "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "filterable": true } }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 49 },
+      "id": 20,
+      "options": { "cellHeight": "sm", "showHeader": true },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT r.code, wl.level, wl.mode, COUNT(*) AS total_niveis_concluidos, AVG(wl.completed_at - wl.started_at) AS tempo_medio, MIN(wl.completed_at - wl.started_at) AS tempo_min, MAX(wl.completed_at - wl.started_at) AS tempo_max FROM approval_workflow_levels wl JOIN approval_workflows wf ON wf.workflow_id = wl.workflow_id LEFT JOIN rules r ON r.rule_id = wf.rule_id WHERE wl.completed_at IS NOT NULL AND wl.started_at IS NOT NULL GROUP BY r.code, wl.level, wl.mode ORDER BY r.code, wl.level",
+          "refId": "A"
+        }
+      ],
+      "title": "Tempo Médio de Conclusão por Nível",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "fieldConfig": { "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "filterable": true } }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 49 },
+      "id": 21,
+      "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [{ "desc": true, "displayName": "total_decisoes" }] },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT u.name AS aprovador, COUNT(*) AS total_decisoes, COUNT(*) FILTER (WHERE ad.decision = 'APPROVED') AS aprovadas, COUNT(*) FILTER (WHERE ad.decision = 'REJECTED') AS rejeitadas, AVG(ad.decided_at - wl.started_at) AS tempo_medio_resposta FROM approval_decisions ad JOIN approval_workflow_levels wl ON wl.level_id = ad.level_id JOIN users u ON u.user_id = ad.acting_user_id GROUP BY u.user_id, u.name ORDER BY total_decisoes DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "Tempo Médio de Resposta e Volume por Aprovador",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "fieldConfig": { "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "filterable": true } }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 57 },
+      "id": 22,
+      "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [{ "desc": true, "displayName": "tempo_no_nivel" }] },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT po.order_number, wl.level, wl.mode, wl.status, wl.started_at, wl.completed_at, COALESCE(wl.completed_at, NOW()) - wl.started_at AS tempo_no_nivel FROM approval_workflow_levels wl JOIN approval_workflows wf ON wf.workflow_id = wl.workflow_id JOIN purchase_orders po ON po.purchase_order_id = wf.purchase_order_id WHERE wl.started_at IS NOT NULL ORDER BY tempo_no_nivel DESC LIMIT 100",
+          "refId": "A"
+        }
+      ],
+      "title": "SLA — Tempo em Aberto por Nível",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 65 },
+      "id": 23,
+      "panels": [],
+      "title": "Financeiro",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "drawStyle": "bars", "fillOpacity": 60, "stacking": { "mode": "normal" } }, "unit": "currencyBRL" }, "overrides": [] },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 66 },
+      "id": 24,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT DATE_TRUNC('month', wf.finalized_at) AS time, wf.status AS metric, SUM(po.total_amount) AS valor_total FROM approval_workflows wf JOIN purchase_orders po ON po.purchase_order_id = wf.purchase_order_id JOIN companies c ON c.company_id = po.company_id WHERE wf.finalized_at IS NOT NULL AND wf.status IN ('APPROVED','REJECTED') AND c.name IN ($empresa) AND $__timeFilter(wf.finalized_at) GROUP BY 1, 2 ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Valor Aprovado x Rejeitado por Mês",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 75 },
+      "id": 25,
+      "panels": [],
+      "title": "Auditoria e Integração LN",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "fieldConfig": { "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "filterable": true } }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 76 },
+      "id": 26,
+      "options": { "cellHeight": "sm", "showHeader": true },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT po.order_number, c.name AS empresa, wf.status, wf.ln_sync_status, wf.ln_sync_attempts, wf.ln_last_error, wf.finalized_at FROM approval_workflows wf JOIN purchase_orders po ON po.purchase_order_id = wf.purchase_order_id JOIN companies c ON c.company_id = po.company_id WHERE wf.ln_sync_status = 'FAILED' AND c.name IN ($empresa) ORDER BY wf.finalized_at DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "OCs com Erro de Sincronização LN",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "fieldConfig": { "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "filterable": true } }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 76 },
+      "id": 27,
+      "options": { "cellHeight": "sm", "showHeader": true },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT po.order_number, wae.message, wae.metadata->'ruleId' AS regra_vencedora, wae.metadata->'conflictedWith' AS regras_conflitantes, wae.created_at FROM workflow_audit_events wae JOIN approval_workflows wf ON wf.workflow_id = wae.workflow_id JOIN purchase_orders po ON po.purchase_order_id = wf.purchase_order_id WHERE wae.type = 'RULE_APPLIED' AND jsonb_array_length(COALESCE(wae.metadata->'conflictedWith', '[]'::jsonb)) > 0 ORDER BY wae.created_at DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "OCs com Conflito de Regras",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "fieldConfig": { "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "filterable": true } }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 84 },
+      "id": 28,
+      "options": { "cellHeight": "sm", "showHeader": true, "sortBy": [{ "desc": true, "displayName": "total_em_ocs_rejeitadas" }] },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT pol.item_code, pol.item_description, pol.category, COUNT(*) AS total_em_ocs_rejeitadas, SUM(pol.line_amount) AS valor_total FROM purchase_order_lines pol JOIN purchase_orders po ON po.purchase_order_id = pol.purchase_order_id WHERE po.status = 'REJECTED' GROUP BY pol.item_code, pol.item_description, pol.category ORDER BY total_em_ocs_rejeitadas DESC LIMIT 50",
+          "refId": "A"
+        }
+      ],
+      "title": "Itens Mais Recorrentes em OCs Rejeitadas",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+      "fieldConfig": { "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "filterable": true } }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 84 },
+      "id": 29,
+      "options": { "cellHeight": "sm", "showHeader": true },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT original.name AS titular, substitute.name AS substituto, us.priority FROM users_substitutes us JOIN users original ON original.user_id = us.user_id JOIN users substitute ON substitute.user_id = us.substitute_id ORDER BY original.name, us.priority",
+          "refId": "A"
+        }
+      ],
+      "title": "Substitutos Configurados (Delegação)",
+      "type": "table"
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "tags": ["goapprove", "purchase-orders", "approval-workflow"],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": true, "text": ["All"], "value": ["$__all"] },
+        "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+        "definition": "SELECT name FROM companies ORDER BY name",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Empresa",
+        "multi": true,
+        "name": "empresa",
+        "options": [],
+        "query": "SELECT name FROM companies ORDER BY name",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": { "selected": true, "text": ["All"], "value": ["$__all"] },
+        "datasource": { "type": "postgres", "uid": "${DS_POSTGRES}" },
+        "definition": "SELECT user_id AS __value, name AS __text FROM users WHERE role IN ('APPROVER','ADMINISTRATOR','OWNER') ORDER BY name",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Aprovador",
+        "multi": true,
+        "name": "aprovador",
+        "options": [],
+        "query": "SELECT user_id AS __value, name AS __text FROM users WHERE role IN ('APPROVER','ADMINISTRATOR','OWNER') ORDER BY name",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": { "from": "now-90d", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "GoApprove — Motor de Regras e Workflow de Aprovação",
+  "uid": "goapprove-approval-workflow",
+  "version": 1,
+  "weekStart": ""
+}

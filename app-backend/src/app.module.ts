@@ -7,6 +7,8 @@ import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { PurchaseOrderModule } from './modules/purchase-order/purchase-order.module';
+import { RuleModule } from './modules/rule/rule.module';
+import { WorkflowModule } from './modules/workflow/workflow.module';
 import { InternalApiKeyGuard } from './shared/guards/internal-api-key.guard';
 
 @Module({
@@ -16,6 +18,8 @@ import { InternalApiKeyGuard } from './shared/guards/internal-api-key.guard';
     CompanyModule,
     AuthModule,
     OnboardingModule,
+    RuleModule,
+    WorkflowModule,
     PurchaseOrderModule,
   ],
   controllers: [],

@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { CompanyRepository } from '../../company/repositories/company.repository';
+import { RuleEngineService } from '../../rule/services/rule-engine.service';
+import { WorkflowService } from '../../workflow/services/workflow.service';
 import { ReceivePurchaseOrderDto } from '../dtos/receive-purchase-order.dto';
 import { PurchaseOrderRepository } from '../repositories/purchase-order.repository';
 
@@ -9,6 +11,8 @@ export class PurchaseOrderService {
   constructor(
     private readonly companyRepository: CompanyRepository,
     private readonly purchaseOrderRepository: PurchaseOrderRepository,
+    private readonly ruleEngineService: RuleEngineService,
+    private readonly workflowService: WorkflowService,
   ) {}
 
   async receive(dto: ReceivePurchaseOrderDto) {
@@ -22,6 +26,17 @@ export class PurchaseOrderService {
       );
     }
 
-    return this.purchaseOrderRepository.create(company.companyId, dto);
+    const purchaseOrder = await this.purchaseOrderRepository.create(
+      company.companyId,
+      dto,
+    );
+
+    const ruleMatch = await this.ruleEngineService.evaluate(purchaseOrder);
+    await this.workflowService.startWorkflow(
+      purchaseOrder.purchaseOrderId,
+      ruleMatch,
+    );
+
+    return purchaseOrder;
   }
 }

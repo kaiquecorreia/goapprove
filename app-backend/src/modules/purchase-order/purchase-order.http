@@ -12,7 +12,7 @@ x-internal-api-key: {{apiKey}}
   "schemaVersion": "1.0",
   "sentAt": "2026-06-16T10:30:00-03:00",
   "company": {
-    "code": "E2E_TEST_001",
+    "code": "ADMIN",
     "name": "Empresa Matriz"
   },
   "purchaseOrder": {

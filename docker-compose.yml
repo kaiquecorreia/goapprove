@@ -50,6 +50,17 @@ services:
     depends_on:
       - app-backend
 
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3004:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+
 volumes:
   goapprove_postgres_data:
+    driver: local
+  grafana-storage:
     driver: local
