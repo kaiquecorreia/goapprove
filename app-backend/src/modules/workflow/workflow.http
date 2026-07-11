@@ -2,8 +2,13 @@
 @apiKey = d4ad57c970c464a0de00b5b362a3a1164a7657110082f2b9ac28f4f551cdb360
 @token = REPLACE_WITH_ACCESS_TOKEN_FROM_AUTH_CALLBACK
 
-### List my pending approvals
+### List pending purchase orders (OWNER/ADMINISTRATOR: company-wide; APPROVER: own assignments + substitutions)
 GET {{baseUrl}}/workflows/pending
+x-internal-api-key: {{apiKey}}
+Authorization: Bearer {{token}}
+
+### List pending purchase orders, paginated and filtered
+GET {{baseUrl}}/workflows/pending?page=1&limit=20&search=4500012345&companyId=REPLACE_WITH_COMPANY_ID&supplierCode=SUP001&requesterCode=REQ001&costCenter=CC001
 x-internal-api-key: {{apiKey}}
 Authorization: Bearer {{token}}
 

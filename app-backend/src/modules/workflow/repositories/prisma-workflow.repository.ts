@@ -12,6 +12,8 @@ import {
   CreateAuditEventInput,
   CreateDecisionInput,
   CreateWorkflowInput,
+  FindPendingWorkflowsCriteria,
+  FindPendingWorkflowsResult,
   UpdateWorkflowInput,
   WorkflowRepository,
 } from './workflow.repository';
@@ -85,23 +87,48 @@ export class PrismaWorkflowRepository implements WorkflowRepository {
     });
   }
 
-  async findPendingForUsers(
-    userIds: string[],
-  ): Promise<WorkflowWithRelations[]> {
-    return this.prismaService.getClient().approvalWorkflow.findMany({
-      where: {
-        status: 'PENDING',
+  async findPending(
+    criteria: FindPendingWorkflowsCriteria,
+  ): Promise<FindPendingWorkflowsResult> {
+    const where: Prisma.ApprovalWorkflowWhereInput = {
+      status: 'PENDING',
+      ...(criteria.userIds && {
         levels: {
           some: {
             status: 'PENDING',
             approvers: {
-              some: { userId: { in: userIds }, status: 'PENDING' },
+              some: { userId: { in: criteria.userIds }, status: 'PENDING' },
             },
           },
         },
+      }),
+      purchaseOrder: {
+        ...(criteria.companyId && { companyId: criteria.companyId }),
+        ...(criteria.supplierCode && { supplierCode: criteria.supplierCode }),
+        ...(criteria.requesterCode && {
+          requesterCode: criteria.requesterCode,
+        }),
+        ...(criteria.costCenter && { costCenter: criteria.costCenter }),
+        ...(criteria.search && {
+          orderNumber: { contains: criteria.search, mode: 'insensitive' },
+        }),
       },
-      include: WORKFLOW_INCLUDE,
-    });
+    };
+
+    const client = this.prismaService.getClient();
+
+    const [items, total] = await Promise.all([
+      client.approvalWorkflow.findMany({
+        where,
+        include: WORKFLOW_INCLUDE,
+        skip: criteria.skip,
+        take: criteria.take,
+        orderBy: { purchaseOrder: { erpCreatedAt: 'asc' } },
+      }),
+      client.approvalWorkflow.count({ where }),
+    ]);
+
+    return { items, total };
   }
 
   async createDecision(input: CreateDecisionInput): Promise<ApprovalDecision> {

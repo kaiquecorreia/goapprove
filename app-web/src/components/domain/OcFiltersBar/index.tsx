@@ -9,52 +9,49 @@ import styles from './styles.module.scss';
 
 export interface OcFilters {
   search: string;
-  company: string;
-  supplier: string;
-  requester: string;
+  companyId: string;
+  supplierCode: string;
+  requesterCode: string;
   costCenter: string;
-  category: string;
 }
 
 export const EMPTY_OC_FILTERS: OcFilters = {
   search: '',
-  company: '',
-  supplier: '',
-  requester: '',
+  companyId: '',
+  supplierCode: '',
+  requesterCode: '',
   costCenter: '',
-  category: '',
+};
+
+type TextFilterKey = 'supplierCode' | 'requesterCode' | 'costCenter';
+
+const TEXT_FILTER_LABELS: Record<TextFilterKey, string> = {
+  supplierCode: 'Fornecedor',
+  requesterCode: 'Solicitante',
+  costCenter: 'Centro de custo',
 };
 
 interface OcFiltersBarProps {
   filters: OcFilters;
   onChange: (filters: OcFilters) => void;
   companyOptions: SelectOption[];
-  supplierOptions: SelectOption[];
-  requesterOptions: SelectOption[];
-  costCenterOptions: SelectOption[];
-  categoryOptions: SelectOption[];
+  showCompanyFilter?: boolean;
 }
-
-const FILTER_LABELS: Record<keyof Omit<OcFilters, 'search'>, string> = {
-  company: 'Empresa',
-  supplier: 'Fornecedor',
-  requester: 'Solicitante',
-  costCenter: 'Centro de custo',
-  category: 'Categoria',
-};
 
 export function OcFiltersBar({
   filters,
   onChange,
   companyOptions,
-  supplierOptions,
-  requesterOptions,
-  costCenterOptions,
-  categoryOptions,
+  showCompanyFilter = false,
 }: OcFiltersBarProps) {
-  const activeFilters = (Object.keys(FILTER_LABELS) as Array<keyof typeof FILTER_LABELS>).filter(
+  const companyLabel = companyOptions.find((option) => option.value === filters.companyId)?.label;
+
+  const activeTextFilters = (Object.keys(TEXT_FILTER_LABELS) as TextFilterKey[]).filter(
     (key) => filters[key],
   );
+
+  const hasActiveFilters =
+    Boolean(showCompanyFilter && filters.companyId) || activeTextFilters.length > 0;
 
   return (
     <div className={styles.bar}>
@@ -66,53 +63,58 @@ export function OcFiltersBar({
           onChange={(event) => onChange({ ...filters, search: event.target.value })}
           wrapperClassName={styles.search}
         />
-        <Select
-          placeholder="Empresa"
-          options={companyOptions}
-          value={filters.company}
-          onChange={(event) => onChange({ ...filters, company: event.target.value })}
-          wrapperClassName={styles.select}
-        />
-        <Select
+        {showCompanyFilter && (
+          <Select
+            placeholder="Empresa"
+            options={companyOptions}
+            value={filters.companyId}
+            onChange={(event) => onChange({ ...filters, companyId: event.target.value })}
+            wrapperClassName={styles.select}
+          />
+        )}
+        <Input
           placeholder="Fornecedor"
-          options={supplierOptions}
-          value={filters.supplier}
-          onChange={(event) => onChange({ ...filters, supplier: event.target.value })}
+          value={filters.supplierCode}
+          onChange={(event) => onChange({ ...filters, supplierCode: event.target.value })}
           wrapperClassName={styles.select}
         />
-        <Select
+        <Input
           placeholder="Solicitante"
-          options={requesterOptions}
-          value={filters.requester}
-          onChange={(event) => onChange({ ...filters, requester: event.target.value })}
+          value={filters.requesterCode}
+          onChange={(event) => onChange({ ...filters, requesterCode: event.target.value })}
           wrapperClassName={styles.select}
         />
-        <Select
+        <Input
           placeholder="Centro de custo"
-          options={costCenterOptions}
           value={filters.costCenter}
           onChange={(event) => onChange({ ...filters, costCenter: event.target.value })}
           wrapperClassName={styles.select}
         />
-        <Select
-          placeholder="Categoria"
-          options={categoryOptions}
-          value={filters.category}
-          onChange={(event) => onChange({ ...filters, category: event.target.value })}
-          wrapperClassName={styles.select}
-        />
       </div>
 
-      {activeFilters.length > 0 && (
+      {hasActiveFilters && (
         <div className={styles.activeFilters}>
-          {activeFilters.map((key) => (
+          {showCompanyFilter && filters.companyId && companyLabel && (
+            <Badge variant="outline">
+              Empresa: {companyLabel}
+              <button
+                type="button"
+                className={styles.removeFilter}
+                onClick={() => onChange({ ...filters, companyId: '' })}
+                aria-label="Remover filtro Empresa"
+              >
+                <X size={12} />
+              </button>
+            </Badge>
+          )}
+          {activeTextFilters.map((key) => (
             <Badge key={key} variant="outline">
-              {FILTER_LABELS[key]}: {filters[key]}
+              {TEXT_FILTER_LABELS[key]}: {filters[key]}
               <button
                 type="button"
                 className={styles.removeFilter}
                 onClick={() => onChange({ ...filters, [key]: '' })}
-                aria-label={`Remover filtro ${FILTER_LABELS[key]}`}
+                aria-label={`Remover filtro ${TEXT_FILTER_LABELS[key]}`}
               >
                 <X size={12} />
               </button>

@@ -13,20 +13,19 @@ import {
   TableRow,
 } from '@/components/ui/Table';
 import { StatusBadge } from '@/components/domain/StatusBadge';
-import { SLABadge } from '@/components/domain/SLABadge';
 import { formatCurrency } from '@/lib/format/currency';
-import type { PurchaseOrder } from '@/lib/mock/types';
+import type { OcTableRow } from '@/lib/mock/types';
 import styles from './styles.module.scss';
 
 interface OcTableProps {
-  orders: PurchaseOrder[];
+  orders: OcTableRow[];
   showSelection?: boolean;
   showQuickActions?: boolean;
   selected?: string[];
   onToggleSelect?: (id: string) => void;
   onToggleSelectAll?: () => void;
-  onApprove?: (order: PurchaseOrder) => void;
-  onReject?: (order: PurchaseOrder) => void;
+  onApprove?: (order: OcTableRow) => void;
+  onReject?: (order: OcTableRow) => void;
 }
 
 export function OcTable({
@@ -61,7 +60,6 @@ export function OcTable({
           <TableHead>Solicitante</TableHead>
           <TableHead align="right">Valor</TableHead>
           <TableHead>Status</TableHead>
-          {showQuickActions && <TableHead>SLA</TableHead>}
           <TableHead align="right">Ações</TableHead>
         </TableRow>
       </TableHeader>
@@ -84,11 +82,6 @@ export function OcTable({
             <TableCell>
               <StatusBadge status={order.status} />
             </TableCell>
-            {showQuickActions && (
-              <TableCell>
-                {order.status === 'pending' && <SLABadge hours={order.slaHours} />}
-              </TableCell>
-            )}
             <TableCell align="right">
               <div className={styles.actions}>
                 <Link href={`/ocs/${order.id}`}>

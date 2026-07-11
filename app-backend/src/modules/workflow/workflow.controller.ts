@@ -5,6 +5,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -12,13 +13,18 @@ import {
   ApiBody,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { UserRole } from '@prisma/client';
 
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
+import { Roles } from '../../shared/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
+import { RolesGuard } from '../../shared/guards/roles.guard';
 import { AuthenticatedUser } from '../../shared/types/authenticated-user';
+import { ListPendingWorkflowsDto } from './dtos/list-pending-workflows.dto';
 import { RecordDecisionDto } from './dtos/record-decision.dto';
 import { GetPendingApprovalsUseCase } from './use-cases/get-pending-approvals.use-case';
 import { GetWorkflowUseCase } from './use-cases/get-workflow.use-case';
@@ -38,13 +44,29 @@ export class WorkflowController {
   ) {}
 
   @Get('pending')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.OWNER, UserRole.ADMINISTRATOR, UserRole.APPROVER)
   @ApiOperation({
     summary:
-      "List the current user's pending approvals (direct assignments and substitute-eligible ones)",
+      'List pending purchase orders. OWNER/ADMINISTRATOR see every pending PO in the company; APPROVER sees only their own assignments (direct and substitute-eligible ones)',
   })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Purchase order number',
+  })
+  @ApiQuery({ name: 'companyId', required: false, format: 'uuid' })
+  @ApiQuery({ name: 'supplierCode', required: false })
+  @ApiQuery({ name: 'requesterCode', required: false })
+  @ApiQuery({ name: 'costCenter', required: false })
   @ApiResponse({ status: 200, description: 'Pending workflows listed' })
-  findPending(@CurrentUser() user: AuthenticatedUser) {
-    return this.getPendingApprovalsUseCase.execute(user.userId);
+  findPending(
+    @Query() query: ListPendingWorkflowsDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.getPendingApprovalsUseCase.execute(user, query);
   }
 
   @Get(':purchaseOrderId')

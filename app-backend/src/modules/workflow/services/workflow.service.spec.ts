@@ -59,7 +59,7 @@ describe('WorkflowService', () => {
       create: jest.fn(),
       findByPurchaseOrderId: jest.fn(),
       findById: jest.fn(),
-      findPendingForUsers: jest.fn(),
+      findPending: jest.fn(),
       createDecision: jest.fn(),
       updateApproverStatus: jest.fn(),
       updateLevelStatus: jest.fn(),
@@ -425,6 +425,72 @@ describe('WorkflowService', () => {
       await service.retryLnSync('po-1');
 
       expect(lnSyncService.sendResult).toHaveBeenCalledWith('workflow-1');
+    });
+  });
+
+  describe('findPending', () => {
+    it('OWNER: consulta sem restrição de usuário (visão da empresa toda)', async () => {
+      workflowRepository.findPending.mockResolvedValue({ items: [], total: 0 });
+
+      await service.findPending(
+        { userId: 'owner-1', role: 'OWNER', email: 'owner@x.com' },
+        { page: 1, limit: 20 },
+      );
+
+      expect(workflowRepository.findPending).toHaveBeenCalledWith({
+        skip: 0,
+        take: 20,
+        search: undefined,
+        companyId: undefined,
+        supplierCode: undefined,
+        requesterCode: undefined,
+        costCenter: undefined,
+      });
+      expect(userRepository.findById).not.toHaveBeenCalled();
+    });
+
+    it('ADMINISTRATOR: consulta sem restrição de usuário, repassando filtros e paginação', async () => {
+      workflowRepository.findPending.mockResolvedValue({ items: [], total: 0 });
+
+      await service.findPending(
+        { userId: 'admin-1', role: 'ADMINISTRATOR', email: 'admin@x.com' },
+        { page: 2, limit: 10, search: '4500012345', companyId: 'company-1' },
+      );
+
+      expect(workflowRepository.findPending).toHaveBeenCalledWith({
+        skip: 10,
+        take: 10,
+        search: '4500012345',
+        companyId: 'company-1',
+        supplierCode: undefined,
+        requesterCode: undefined,
+        costCenter: undefined,
+      });
+    });
+
+    it('APPROVER: restringe por usuário logado + substitutos', async () => {
+      workflowRepository.findPending.mockResolvedValue({ items: [], total: 0 });
+      userRepository.findById.mockResolvedValue({
+        substitutedBy: [
+          { userId: 'approverA', substituteId: 'approver-1', priority: 1 },
+        ],
+      } as never);
+
+      await service.findPending(
+        { userId: 'approver-1', role: 'APPROVER', email: 'approver@x.com' },
+        { page: 1, limit: 20 },
+      );
+
+      expect(workflowRepository.findPending).toHaveBeenCalledWith({
+        userIds: ['approver-1', 'approverA'],
+        skip: 0,
+        take: 20,
+        search: undefined,
+        companyId: undefined,
+        supplierCode: undefined,
+        requesterCode: undefined,
+        costCenter: undefined,
+      });
     });
   });
 });

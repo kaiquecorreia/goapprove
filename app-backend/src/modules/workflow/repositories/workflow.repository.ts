@@ -53,15 +53,32 @@ export interface UpdateWorkflowInput {
   lnSyncedAt?: Date | null;
 }
 
+export interface FindPendingWorkflowsCriteria {
+  // Omitted => no per-user restriction (company-wide view, for OWNER/ADMINISTRATOR).
+  userIds?: string[];
+  skip: number;
+  take: number;
+  search?: string;
+  companyId?: string;
+  supplierCode?: string;
+  requesterCode?: string;
+  costCenter?: string;
+}
+
+export interface FindPendingWorkflowsResult {
+  items: WorkflowWithRelations[];
+  total: number;
+}
+
 export abstract class WorkflowRepository {
   abstract create(input: CreateWorkflowInput): Promise<WorkflowWithRelations>;
   abstract findByPurchaseOrderId(
     purchaseOrderId: string,
   ): Promise<WorkflowWithRelations | null>;
   abstract findById(workflowId: string): Promise<WorkflowWithRelations | null>;
-  abstract findPendingForUsers(
-    userIds: string[],
-  ): Promise<WorkflowWithRelations[]>;
+  abstract findPending(
+    criteria: FindPendingWorkflowsCriteria,
+  ): Promise<FindPendingWorkflowsResult>;
 
   abstract createDecision(
     input: CreateDecisionInput,

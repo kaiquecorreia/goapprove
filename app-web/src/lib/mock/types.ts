@@ -76,6 +76,30 @@ export interface OcComment {
   text: string;
 }
 
+export interface OcTableRow {
+  id: string;
+  number: string;
+  company: string;
+  supplier: string;
+  requester: string;
+  total: number;
+  status: OCStatus;
+}
+
+export interface PendingPurchaseOrder extends OcTableRow {
+  currentLevel: number | null;
+  totalLevels: number;
+  costCenter: string | null;
+  erpCreatedAt: string;
+}
+
+export interface PendingPurchaseOrdersPage {
+  items: PendingPurchaseOrder[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export interface PurchaseOrder {
   id: string;
   number: string;

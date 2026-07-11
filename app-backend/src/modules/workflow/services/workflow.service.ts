@@ -9,8 +9,13 @@ import { ApprovalMode, LevelStatus } from '@prisma/client';
 
 import { UserRepository } from '../../user/repositories/user.repository';
 import { TransactionService } from '../../../shared/prisma/transaction.service';
+import { AuthenticatedUser } from '../../../shared/types/authenticated-user';
 import { MatchedRuleResult } from '../../rule/types/matched-rule-result';
-import { WorkflowRepository } from '../repositories/workflow.repository';
+import { ListPendingWorkflowsDto } from '../dtos/list-pending-workflows.dto';
+import {
+  FindPendingWorkflowsResult,
+  WorkflowRepository,
+} from '../repositories/workflow.repository';
 import { RecordDecisionInput } from '../types/record-decision-input';
 import {
   ApprovalWorkflowApproverWithUser,
@@ -106,14 +111,47 @@ export class WorkflowService {
     return workflow;
   }
 
-  async findPendingForUser(userId: string): Promise<WorkflowWithRelations[]> {
-    const user = await this.userRepository.findById(userId);
-    const substitutedForIds = (user?.substitutedBy ?? []).map((s) => s.userId);
+  async findPending(
+    user: AuthenticatedUser,
+    query: ListPendingWorkflowsDto,
+  ): Promise<FindPendingWorkflowsResult & { page: number; limit: number }> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const filters = {
+      search: query.search,
+      companyId: query.companyId,
+      supplierCode: query.supplierCode,
+      requesterCode: query.requesterCode,
+      costCenter: query.costCenter,
+    };
 
-    return this.workflowRepository.findPendingForUsers([
-      userId,
-      ...substitutedForIds,
-    ]);
+    const isCompanyWideViewer =
+      user.role === 'OWNER' || user.role === 'ADMINISTRATOR';
+
+    let result: FindPendingWorkflowsResult;
+
+    if (isCompanyWideViewer) {
+      // Supervisory view: every pending PO in the company, not just their own approvals.
+      result = await this.workflowRepository.findPending({
+        skip: (page - 1) * limit,
+        take: limit,
+        ...filters,
+      });
+    } else {
+      const currentUser = await this.userRepository.findById(user.userId);
+      const substitutedForIds = (currentUser?.substitutedBy ?? []).map(
+        (s) => s.userId,
+      );
+
+      result = await this.workflowRepository.findPending({
+        userIds: [user.userId, ...substitutedForIds],
+        skip: (page - 1) * limit,
+        take: limit,
+        ...filters,
+      });
+    }
+
+    return { ...result, page, limit };
   }
 
   async recordDecision(
