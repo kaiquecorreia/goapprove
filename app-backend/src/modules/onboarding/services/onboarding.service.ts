@@ -87,6 +87,7 @@ export class OnboardingService {
         name: dto.adminName,
         email: dto.adminEmail,
         externalIntegrationUser: dto.adminExternalIntegrationUser,
+        password: dto.adminPassword,
         role: UserRole.OWNER,
       });
 

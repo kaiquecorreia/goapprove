@@ -3,18 +3,14 @@ import { getServerSession } from 'next-auth/next';
 import { AxiosError } from 'axios';
 
 import { baseAuthOptions } from '@/lib/auth';
-import { getBackendAccessToken } from '@/lib/backendAuth';
+import { resolveBackendAccessToken } from '@/lib/backendAuth';
 import { internalApiClient } from '@/services/api';
 import { ERoutePath, canAccessRoute } from '@/config/navigation';
 
 async function requireRulesAccessSession() {
   const session = await getServerSession(baseAuthOptions);
 
-  if (
-    !session?.role ||
-    !session.externalIntegrationUser ||
-    !canAccessRoute(session.role, ERoutePath.RULES)
-  ) {
+  if (!session?.role || !canAccessRoute(session.role, ERoutePath.RULES)) {
     return null;
   }
 
@@ -31,7 +27,7 @@ export async function GET(req: NextRequest) {
   const companyId = req.nextUrl.searchParams.get('companyId') ?? undefined;
 
   try {
-    const token = await getBackendAccessToken(session.externalIntegrationUser!);
+    const token = await resolveBackendAccessToken(session);
     const { data } = await internalApiClient.get('/rules', {
       params: companyId ? { companyId } : undefined,
       headers: { Authorization: `Bearer ${token}` },
@@ -56,7 +52,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
 
   try {
-    const token = await getBackendAccessToken(session.externalIntegrationUser!);
+    const token = await resolveBackendAccessToken(session);
     const { data } = await internalApiClient.post('/rules', body, {
       headers: { Authorization: `Bearer ${token}` },
     });

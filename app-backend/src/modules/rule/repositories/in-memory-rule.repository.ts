@@ -13,6 +13,7 @@ function createStubUser(userId: string): User {
     name: '',
     email: `${userId}@stub.local`,
     externalIntegrationUser: userId,
+    passwordHash: null,
     role: UserRole.APPROVER,
     active: true,
     approvalLimit: null,

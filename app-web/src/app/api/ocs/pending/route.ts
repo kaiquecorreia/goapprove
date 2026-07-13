@@ -3,18 +3,14 @@ import { getServerSession } from 'next-auth/next';
 import { AxiosError } from 'axios';
 
 import { baseAuthOptions } from '@/lib/auth';
-import { getBackendAccessToken } from '@/lib/backendAuth';
+import { resolveBackendAccessToken } from '@/lib/backendAuth';
 import { internalApiClient } from '@/services/api';
 import { ERoutePath, canAccessRoute } from '@/config/navigation';
 
 async function requirePendingOcsAccessSession() {
   const session = await getServerSession(baseAuthOptions);
 
-  if (
-    !session?.role ||
-    !session.externalIntegrationUser ||
-    !canAccessRoute(session.role, ERoutePath.OCS_PENDING)
-  ) {
+  if (!session?.role || !canAccessRoute(session.role, ERoutePath.OCS_PENDING)) {
     return null;
   }
 
@@ -45,7 +41,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const token = await getBackendAccessToken(session.externalIntegrationUser!);
+    const token = await resolveBackendAccessToken(session);
     const { data } = await internalApiClient.get('/workflows/pending', {
       params,
       headers: { Authorization: `Bearer ${token}` },

@@ -6,7 +6,9 @@ import {
   User,
 } from '@prisma/client';
 
-export type RuleLevelApproverWithUser = RuleLevelApprover & { user: User };
+export type RuleLevelApproverWithUser = RuleLevelApprover & {
+  user: Omit<User, 'passwordHash'>;
+};
 
 export type RuleLevelWithApprovers = RuleLevel & {
   approvers: RuleLevelApproverWithUser[];

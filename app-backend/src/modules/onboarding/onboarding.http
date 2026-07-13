@@ -11,6 +11,7 @@ Content-Type: application/json
   "adminName": "Jane Doe",
   "adminEmail": "jane.doe@acme.com",
   "adminExternalIntegrationUser": "EXT_ADMIN_001",
+  "adminPassword": "Password123",
   "integration": {
     "provider": "INFOR",
     "baseUrl": "https://api.infor.example.com",

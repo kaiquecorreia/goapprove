@@ -22,7 +22,8 @@ import { Checkbox } from '@/components/ui/Checkbox';
 import { feedback } from '@/services/feedback';
 import { createUser, updateUser } from '@/services/usersClient';
 import { USER_ROLE_LABELS } from '@/lib/userRoleLabels';
-import { USER_ROLE_OPTIONS, userSchema, type UserFormData } from '@/app/users/schema';
+import { USER_ROLE_OPTIONS, buildUserSchema, type UserFormData } from '@/app/users/schema';
+import { SetPasswordDialog } from '@/components/domain/SetPasswordDialog';
 import type { Company, User } from '@/lib/mock/types';
 
 function buildDefaultValues(user?: User): UserFormData {
@@ -30,6 +31,8 @@ function buildDefaultValues(user?: User): UserFormData {
     name: user?.name ?? '',
     email: user?.email ?? '',
     externalIntegrationUser: user?.externalIntegrationUser ?? '',
+    password: '',
+    confirmPassword: '',
     role: user?.role ?? USER_ROLE_OPTIONS[1],
     active: user?.active ?? true,
     approvalLimit: user?.approvalLimit ?? 0,
@@ -61,6 +64,7 @@ export function UserFormDialog({
 }: UserFormDialogProps) {
   const router = useRouter();
   const isEditing = !!user;
+  const [isSetPasswordOpen, setIsSetPasswordOpen] = useState(false);
 
   const isControlled = open !== undefined;
   const [internalOpen, setInternalOpen] = useState(false);
@@ -78,7 +82,7 @@ export function UserFormDialog({
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<UserFormData>({
-    resolver: zodResolver(userSchema),
+    resolver: zodResolver(buildUserSchema(isEditing)),
     defaultValues: buildDefaultValues(user),
   });
 
@@ -113,7 +117,7 @@ export function UserFormDialog({
     const payload = {
       name: data.name,
       email: data.email,
-      externalIntegrationUser: data.externalIntegrationUser,
+      externalIntegrationUser: data.externalIntegrationUser || undefined,
       role: data.role,
       active: data.active,
       approvalLimit: data.approvalLimit,
@@ -126,7 +130,7 @@ export function UserFormDialog({
         await updateUser(user.userId, payload);
         feedback.success(`Usuário ${data.name} atualizado com sucesso!`);
       } else {
-        await createUser(payload);
+        await createUser({ ...payload, password: data.password as string });
         feedback.success(`Usuário ${data.name} criado com sucesso!`);
       }
       setOpen(false);
@@ -175,14 +179,55 @@ export function UserFormDialog({
           </div>
 
           <div>
-            <Label htmlFor="externalIntegrationUser">Usuário de integração (Infor)</Label>
+            <Label htmlFor="externalIntegrationUser">
+              Usuário de integração (Infor) — opcional
+            </Label>
             <Input
               id="externalIntegrationUser"
-              placeholder="usuario@empresa.com"
+              placeholder="Preencha apenas para uso futuro do login via Infor"
               error={errors.externalIntegrationUser?.message}
               {...register('externalIntegrationUser')}
             />
           </div>
+
+          {isEditing ? (
+            <div>
+              <Label>Senha</Label>
+              <div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setIsSetPasswordOpen(true)}
+                >
+                  Definir/resetar senha
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div>
+                <Label htmlFor="password">Senha</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Mínimo de 8 caracteres"
+                  error={errors.password?.message}
+                  {...register('password')}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="confirmPassword">Confirmar senha</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="Repita a senha"
+                  error={errors.confirmPassword?.message}
+                  {...register('confirmPassword')}
+                />
+              </div>
+            </>
+          )}
 
           <div>
             <Label htmlFor="role">Perfil</Label>
@@ -265,6 +310,15 @@ export function UserFormDialog({
           </DialogFooter>
         </form>
       </DialogContent>
+
+      {isEditing && user && (
+        <SetPasswordDialog
+          userId={user.userId}
+          userName={user.name}
+          open={isSetPasswordOpen}
+          onOpenChange={setIsSetPasswordOpen}
+        />
+      )}
     </Dialog>
   );
 }

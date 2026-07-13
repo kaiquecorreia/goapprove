@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -16,9 +17,11 @@ import {
 } from '@nestjs/swagger';
 
 import { CreateUserDto } from './dtos/create-user.dto';
+import { SetPasswordDto } from './dtos/set-password.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
 import { CreateUserUseCase } from './use-cases/create-user.use-case';
 import { GetUserUseCase } from './use-cases/get-user.use-case';
+import { SetUserPasswordUseCase } from './use-cases/set-user-password.use-case';
 import { UpdateUserUseCase } from './use-cases/update-user.use-case';
 
 @ApiTags('User')
@@ -28,6 +31,7 @@ export class UserController {
     private readonly createUserUseCase: CreateUserUseCase,
     private readonly getUserUseCase: GetUserUseCase,
     private readonly updateUserUseCase: UpdateUserUseCase,
+    private readonly setUserPasswordUseCase: SetUserPasswordUseCase,
   ) {}
 
   @Post()
@@ -79,5 +83,19 @@ export class UserController {
     @Body() data: UpdateUserDto,
   ) {
     return this.updateUserUseCase.execute(userId, data);
+  }
+
+  @Patch(':userId/password')
+  @HttpCode(204)
+  @ApiOperation({ summary: "Set or reset a user's password" })
+  @ApiParam({ name: 'userId', type: String, format: 'uuid' })
+  @ApiBody({ type: SetPasswordDto })
+  @ApiResponse({ status: 204, description: 'Password updated successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async setPassword(
+    @Param('userId', new ParseUUIDPipe({ version: '4' })) userId: string,
+    @Body() data: SetPasswordDto,
+  ) {
+    await this.setUserPasswordUseCase.execute(userId, data);
   }
 }

@@ -7,6 +7,7 @@ import {
 import { Prisma, UserRole } from '@prisma/client';
 
 import { TransactionService } from '../../../shared/prisma/transaction.service';
+import { PasswordService } from '../../../shared/password/password.service';
 import { CreateUserDto } from '../dtos/create-user.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
 import { UserRepository } from '../repositories/user.repository';
@@ -16,14 +17,18 @@ export class UserService {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly transactionService: TransactionService,
+    private readonly passwordService: PasswordService,
   ) {}
 
   async create(data: CreateUserDto) {
     this.assertCompanyRequirement(data.role, data.companyIds);
 
+    const { password, ...rest } = data;
+    const passwordHash = await this.passwordService.hash(password);
+
     return this.transactionService.run(async () => {
       try {
-        return await this.userRepository.create(data);
+        return await this.userRepository.create({ ...rest, passwordHash });
       } catch (error) {
         if (this.isUniqueConstraintError(error)) {
           throw new ConflictException(
@@ -89,6 +94,20 @@ export class UserService {
         throw error;
       }
     });
+  }
+
+  async setPassword(userId: string, plainPassword: string) {
+    const passwordHash = await this.passwordService.hash(plainPassword);
+    const user = await this.userRepository.updatePasswordHash(
+      userId,
+      passwordHash,
+    );
+
+    if (!user) {
+      throw new NotFoundException(`User with id ${userId} not found`);
+    }
+
+    return user;
   }
 
   private assertCompanyRequirement(role: UserRole, companyIds?: string[]) {

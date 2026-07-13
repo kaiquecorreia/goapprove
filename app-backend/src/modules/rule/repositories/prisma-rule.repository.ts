@@ -10,7 +10,11 @@ import { RuleRepository } from './rule.repository';
 const RULE_INCLUDE = {
   conditions: true,
   levels: {
-    include: { approvers: { include: { user: true } } },
+    include: {
+      approvers: {
+        include: { user: { omit: { passwordHash: true } } },
+      },
+    },
     orderBy: { levelNumber: 'asc' },
   },
 } satisfies Prisma.RuleInclude;

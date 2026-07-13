@@ -1,5 +1,5 @@
 @baseUrl = http://localhost:3012
-@userId = 00000000-0000-4000-a000-000000000001
+@userId = 9ffd6d54-dea2-4c93-bafe-7bb530cdcf52
 @companyId = 00000000-0000-4000-a000-000000000099
 
 ### Create a new user
@@ -11,6 +11,7 @@ Content-Type: application/json
   "name": "Clauber Correia",
   "email": "clauber.correia@goapprove.com.br",
   "externalIntegrationUser": "clauber.correia@goapprove.com.br",
+  "password": "Password123",
   "role": "OWNER",
   "active": true,
   "approvalLimit": null,
@@ -33,4 +34,21 @@ Content-Type: application/json
   "email": "john.updated@example.com",
   "active": false,
   "approvalLimit": 10000
+}
+
+### Set or reset a user's password (local login)
+PATCH {{baseUrl}}/user/{{userId}}/password
+Content-Type: application/json
+
+{
+  "password": "123456"
+}
+
+### Login with email and password
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "clauber.correia@eletrofrio.com.br",
+  "password": "kaiqueRC123"
 }

@@ -1,13 +1,22 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Provider } from '@prisma/client';
 
-import { UserRepository } from '../../user/repositories/user.repository';
+import {
+  UserRepository,
+  UserWithRelations,
+} from '../../user/repositories/user.repository';
 import { CompanyUserRepository } from '../../company/repositories/company-user.repository';
 import { CompanyIntegrationRepository } from '../../onboarding/repositories/company-integration.repository';
 import { CryptoService } from '../../../shared/crypto/crypto.service';
+import { PasswordService } from '../../../shared/password/password.service';
 
 const NOT_FOUND_MESSAGE = 'User not found or not authorized';
+const INVALID_CREDENTIALS_MESSAGE = 'Invalid email or password';
 
 @Injectable()
 export class AuthService {
@@ -16,6 +25,7 @@ export class AuthService {
     private readonly companyUserRepository: CompanyUserRepository,
     private readonly companyIntegrationRepository: CompanyIntegrationRepository,
     private readonly cryptoService: CryptoService,
+    private readonly passwordService: PasswordService,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -28,6 +38,29 @@ export class AuthService {
       throw new NotFoundException(NOT_FOUND_MESSAGE);
     }
 
+    return this.buildSessionToken(user);
+  }
+
+  async login(email: string, password: string) {
+    const user = await this.userRepository.findByEmailForAuth(email);
+
+    if (!user || !user.active || !user.passwordHash) {
+      throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
+    }
+
+    const matches = await this.passwordService.compare(
+      password,
+      user.passwordHash,
+    );
+
+    if (!matches) {
+      throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
+    }
+
+    return this.buildSessionToken(user);
+  }
+
+  private async buildSessionToken(user: UserWithRelations) {
     const companyUsers = await this.companyUserRepository.findByUserId(
       user.userId,
     );

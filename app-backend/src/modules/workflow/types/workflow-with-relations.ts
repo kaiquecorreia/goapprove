@@ -10,7 +10,7 @@ import {
 } from '@prisma/client';
 
 export type ApprovalWorkflowApproverWithUser = ApprovalWorkflowApprover & {
-  user: User;
+  user: Omit<User, 'passwordHash'>;
 };
 
 export type ApprovalWorkflowLevelWithRelations = ApprovalWorkflowLevel & {

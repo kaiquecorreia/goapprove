@@ -3,7 +3,6 @@
 import { createContext, useContext, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn, signOut } from 'next-auth/react';
-import axios from 'axios';
 
 // interface User {
 //   id: string;
@@ -29,37 +28,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const login = async () => {
-    try {
-      // TODO: Implement login
+  const login = async (identifier: string, password: string) => {
+    const result = await signIn('credentials', {
+      identifier,
+      password,
+      redirect: false,
+    });
 
-      router.push('/');
-    } catch (error: unknown) {
-      // TODO: Handle error
-      if (axios.isAxiosError(error)) {
-        if (error.response) {
-          const status = error.response.status;
-          if (status === 401 || status === 403) {
-            console.error('Login failed: Invalid credentials');
-            throw new Error('WhatsApp/e-mail ou senha inválidos');
-          } else if (status === 429) {
-            console.error('Login failed: Too many attempts');
-            throw new Error('Muitas tentativas de login. Por favor, tente novamente mais tarde.');
-          } else {
-            console.error(`Login failed with status ${status}:`, error.response.data);
-            throw new Error('Login falhou. Por favor, tente novamente.');
-          }
-        } else {
-          console.error('Login failed: Network issue or server not responding');
-          throw new Error('Erro de rede. Por favor, verifique sua conexão e tente novamente.');
-        }
-      }
-      if (error instanceof Error) {
-        throw error;
-      }
-      console.error('Login failed:', error);
-      throw new Error('Ocorreu um erro inesperado. Por favor, tente novamente.');
+    if (!result || result.error) {
+      console.error('Login failed:', result?.error);
+      throw new Error('Usuário ou senha inválidos');
     }
+
+    router.push('/');
   };
 
   const loginWithInfor = async () => {

@@ -1,3 +1,5 @@
+import { Session } from 'next-auth';
+
 import { internalApiClient } from '@/services/api';
 
 interface BackendTokenResponse {
@@ -14,4 +16,22 @@ export async function getBackendAccessToken(externalIntegrationUser: string): Pr
   });
 
   return data.accessToken;
+}
+
+// Infor sessions have `externalIntegrationUser` set and their `accessToken`
+// (if any) is the *Infor* OAuth token, not ours — always double-hop through
+// /auth/callback for them, same as before. Password-based (Credentials)
+// sessions never get `externalIntegrationUser` set (see lib/auth.ts) and
+// already carry our own backend JWT from sign-in time, so we can use it
+// directly without minting a new one per request.
+export async function resolveBackendAccessToken(session: Session): Promise<string> {
+  if (session.externalIntegrationUser) {
+    return getBackendAccessToken(session.externalIntegrationUser);
+  }
+
+  if (session.accessToken) {
+    return session.accessToken;
+  }
+
+  throw new Error('Sessão sem credenciais de backend válidas');
 }

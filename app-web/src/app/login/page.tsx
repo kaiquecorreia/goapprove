@@ -3,10 +3,9 @@
 import Logo from '../../components/Logo';
 import styles from './styles.module.scss';
 import { useAuth } from '../../contexts/AuthContext';
-import { Building2 } from 'lucide-react';
 import { useState, useEffect, Suspense } from 'react';
 import { useForm } from 'react-hook-form';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginFormData } from './schema';
 import { AxiosError } from 'axios';
@@ -17,7 +16,6 @@ const INVALID_LOGIN_MESSAGE = 'Falha ao fazer login. Verifique suas credenciais.
 function LoginContent() {
   const { login } = useAuth();
   const [error, setError] = useState('');
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -26,7 +24,7 @@ function LoginContent() {
       let errorMessage = '';
       switch (errorParam) {
         case 'auth_failed':
-          errorMessage = 'Falha na autenticação com Google. Tente novamente.';
+          errorMessage = 'Falha na autenticação. Tente novamente.';
           break;
         case 'callback_failed':
           errorMessage = 'Erro no processo de autenticação. Tente novamente.';
@@ -67,6 +65,8 @@ function LoginContent() {
       if (err instanceof AxiosError) {
         const errorMessage = err.response?.data?.message || INVALID_LOGIN_MESSAGE;
         setError(errorMessage);
+      } else if (err instanceof Error) {
+        setError(err.message);
       } else {
         setError(INVALID_LOGIN_MESSAGE);
       }
@@ -81,19 +81,6 @@ function LoginContent() {
           <Logo />
         </div>
         {error && <div className={styles.error}>{error}</div>}
-
-        <button
-          type="button"
-          className={styles.inforButton}
-          onClick={() => router.push('/login/infor')}
-        >
-          <Building2 size={20} />
-          Login com Infor
-        </button>
-
-        <div className={styles.divider}>
-          <span>ou</span>
-        </div>
 
         <form className={styles.loginForm} onSubmit={handleSubmit(onSubmit)}>
           <div className={styles.inputGroup}>

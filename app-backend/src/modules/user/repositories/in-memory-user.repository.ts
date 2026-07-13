@@ -2,15 +2,20 @@ import { Injectable } from '@nestjs/common';
 import { CompanyUser, Prisma, UserSubstitute } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 
-import { CreateUserDto } from '../dtos/create-user.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
-import { UserRepository, UserWithRelations } from './user.repository';
+import {
+  CreateUserData,
+  UserRepository,
+  UserWithPasswordHash,
+  UserWithRelations,
+} from './user.repository';
 
 @Injectable()
 export class InMemoryUserRepository implements UserRepository {
   private readonly users: UserWithRelations[] = [];
   private readonly companyUsers: CompanyUser[] = [];
   private readonly userSubstitutes: UserSubstitute[] = [];
+  private readonly passwordHashes = new Map<string, string>();
 
   private buildUserWithRelations(userId: string): UserWithRelations | null {
     const user = this.users.find((u) => u.userId === userId);
@@ -29,19 +34,21 @@ export class InMemoryUserRepository implements UserRepository {
     };
   }
 
-  create(data: CreateUserDto): Promise<UserWithRelations> {
+  create(data: CreateUserData): Promise<UserWithRelations> {
     const existingEmail = this.users.find((u) => u.email === data.email);
 
     if (existingEmail) {
       throw new Error('Unique constraint violation');
     }
 
-    const existingExternal = this.users.find(
-      (u) => u.externalIntegrationUser === data.externalIntegrationUser,
-    );
+    if (data.externalIntegrationUser) {
+      const existingExternal = this.users.find(
+        (u) => u.externalIntegrationUser === data.externalIntegrationUser,
+      );
 
-    if (existingExternal) {
-      throw new Error('Unique constraint violation');
+      if (existingExternal) {
+        throw new Error('Unique constraint violation');
+      }
     }
 
     const userId = uuidv4();
@@ -51,7 +58,7 @@ export class InMemoryUserRepository implements UserRepository {
       userId,
       name: data.name,
       email: data.email,
-      externalIntegrationUser: data.externalIntegrationUser,
+      externalIntegrationUser: data.externalIntegrationUser ?? null,
       role: data.role,
       active: data.active ?? true,
       approvalLimit:
@@ -66,6 +73,7 @@ export class InMemoryUserRepository implements UserRepository {
     };
 
     this.users.push(user);
+    this.passwordHashes.set(userId, data.passwordHash);
 
     if (data.companyIds && data.companyIds.length > 0) {
       for (const companyId of data.companyIds) {
@@ -117,6 +125,38 @@ export class InMemoryUserRepository implements UserRepository {
 
     return Promise.resolve(
       user ? this.buildUserWithRelations(user.userId) : null,
+    );
+  }
+
+  async findByEmailForAuth(
+    email: string,
+  ): Promise<UserWithPasswordHash | null> {
+    const user = this.users.find((u) => u.email === email);
+
+    if (!user) {
+      return Promise.resolve(null);
+    }
+
+    return Promise.resolve({
+      ...(this.buildUserWithRelations(user.userId) as UserWithRelations),
+      passwordHash: this.passwordHashes.get(user.userId) ?? null,
+    });
+  }
+
+  async updatePasswordHash(
+    userId: string,
+    passwordHash: string,
+  ): Promise<UserWithRelations | null> {
+    const exists = this.users.some((u) => u.userId === userId);
+
+    if (!exists) {
+      return Promise.resolve(null);
+    }
+
+    this.passwordHashes.set(userId, passwordHash);
+
+    return Promise.resolve(
+      this.buildUserWithRelations(userId) as UserWithRelations,
     );
   }
 

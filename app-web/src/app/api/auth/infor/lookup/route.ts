@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AxiosError } from 'axios';
 
 import { internalApiClient } from '@/services/api';
-import { INFOR_LOOKUP_COOKIE } from '@/lib/auth';
+import { INFOR_LOOKUP_COOKIE, isInforLoginEnabled } from '@/lib/auth';
 
 interface IntegrationLookupResponse {
   companyId: string;
@@ -11,6 +11,10 @@ interface IntegrationLookupResponse {
 }
 
 export async function POST(req: NextRequest) {
+  if (!isInforLoginEnabled()) {
+    return NextResponse.json({ message: 'Login via Infor está desabilitado' }, { status: 403 });
+  }
+
   const { externalIntegrationUser } = await req.json();
 
   if (!externalIntegrationUser || typeof externalIntegrationUser !== 'string') {

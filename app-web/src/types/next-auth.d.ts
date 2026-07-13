@@ -9,6 +9,12 @@ declare module 'next-auth' {
     companyId?: string;
     externalIntegrationUser?: string;
   }
+
+  interface User {
+    role?: EUserRole;
+    companyId?: string;
+    accessToken?: string;
+  }
 }
 
 declare module 'next-auth/jwt' {

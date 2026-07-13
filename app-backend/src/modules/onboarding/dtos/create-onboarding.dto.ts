@@ -7,6 +7,7 @@ import {
   IsString,
   Length,
   MaxLength,
+  MinLength,
   ValidateNested,
 } from 'class-validator';
 import { Provider } from '@prisma/client';
@@ -70,6 +71,12 @@ export class CreateOnboardingDto {
   @IsNotEmpty()
   @MaxLength(50)
   adminExternalIntegrationUser!: string;
+
+  @ApiProperty({ minLength: 8 })
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(8)
+  adminPassword!: string;
 
   @ApiProperty({ type: IntegrationCredentialsDto })
   @ValidateNested()

@@ -53,7 +53,8 @@ model User {
   userId                  String         @id @default(uuid()) @map("user_id") @db.Uuid
   name                    String         @map("name") @db.VarChar(150)
   email                   String         @unique @map("email") @db.VarChar(150)
-  externalIntegrationUser String         @unique @map("external_integration_user") @db.VarChar(50)
+  externalIntegrationUser String?        @unique @map("external_integration_user") @db.VarChar(50)
+  passwordHash            String?        @map("password_hash") @db.VarChar(255)
   role                    UserRole       @map("role")
   active                  Boolean        @default(true) @map("active")
   approvalLimit           Decimal?       @map("approval_limit") @db.Decimal(15, 2)

@@ -1,4 +1,5 @@
 import { NextAuthOptions } from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
 import { jwtDecode } from 'jwt-decode';
 import { cookies } from 'next/headers';
 
@@ -6,6 +7,12 @@ import { internalApiClient } from '@/services/api';
 import { EUserRole } from '@/config/navigation';
 
 export const INFOR_LOOKUP_COOKIE = 'infor_login_ctx';
+
+// The Infor OAuth flow is kept in the codebase for a future re-launch, but
+// disabled by default — gate every entry point behind this flag.
+export function isInforLoginEnabled(): boolean {
+  return process.env.ENABLE_INFOR_LOGIN === 'true';
+}
 
 export interface InforLoginContext {
   externalIntegrationUser: string;
@@ -58,10 +65,58 @@ export async function readInforLoginContext(): Promise<InforLoginContext | null>
   }
 }
 
+interface BackendLoginResponse {
+  accessToken: string;
+  userId: string;
+  role: EUserRole;
+  email: string;
+  companyId?: string;
+}
+
+const credentialsProvider = CredentialsProvider({
+  id: 'credentials',
+  name: 'Credentials',
+  credentials: {
+    identifier: { label: 'Usuário', type: 'text' },
+    password: { label: 'Senha', type: 'password' },
+  },
+  async authorize(credentials) {
+    if (!credentials?.identifier || !credentials?.password) {
+      return null;
+    }
+
+    try {
+      const { data } = await internalApiClient.post<BackendLoginResponse>('/auth/login', {
+        email: credentials.identifier,
+        password: credentials.password,
+      });
+
+      return {
+        id: data.userId,
+        email: data.email,
+        role: data.role,
+        companyId: data.companyId,
+        accessToken: data.accessToken,
+      };
+    } catch {
+      return null;
+    }
+  },
+});
+
 const baseCallbacks: NextAuthOptions['callbacks'] = {
-  async jwt({ token, account }) {
+  async jwt({ token, account, user }) {
     if (account?.access_token) {
       token.accessToken = account.access_token;
+    }
+
+    // First sign-in via the Credentials provider: the backend already handed
+    // us a ready-to-use JWT, no need to read the Infor lookup cookie at all.
+    if (user?.accessToken) {
+      token.accessToken = user.accessToken;
+      token.role = user.role;
+      token.companyId = user.companyId;
+      return token;
     }
 
     const loginContext = await readInforLoginContext();
@@ -87,7 +142,7 @@ const baseCallbacks: NextAuthOptions['callbacks'] = {
 // Base config: enough for getServerSession() to decode an already-issued
 // session/JWT elsewhere in the app, without needing the dynamic Infor provider.
 export const baseAuthOptions: NextAuthOptions = {
-  providers: [],
+  providers: [credentialsProvider],
   callbacks: baseCallbacks,
   pages: { signIn: '/login' },
   secret: process.env.NEXTAUTH_SECRET,
@@ -96,6 +151,13 @@ export const baseAuthOptions: NextAuthOptions = {
 // Built fresh per request: the Infor provider's OAuth endpoints/credentials
 // depend on which company the user identified in /login/infor belongs to.
 export async function buildDynamicAuthOptions(): Promise<NextAuthOptions> {
+  // Infor login is disabled by default (kept for a future re-launch) — never
+  // register the dynamic OAuth provider while the flag is off, even if a
+  // stale lookup cookie is still present.
+  if (!isInforLoginEnabled()) {
+    return baseAuthOptions;
+  }
+
   const loginContext = await readInforLoginContext();
   const integration = loginContext
     ? await fetchInforIntegrationConfig(loginContext.externalIntegrationUser)
@@ -113,6 +175,7 @@ export async function buildDynamicAuthOptions(): Promise<NextAuthOptions> {
     ...baseAuthOptions,
     debug: true,
     providers: [
+      ...baseAuthOptions.providers,
       {
         id: 'infor',
         name: 'Infor OS',

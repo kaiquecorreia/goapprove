@@ -5,7 +5,7 @@ import { firstValueFrom } from 'rxjs';
 export interface LnApprovalEntry {
   level: number;
   userId: string;
-  externalIntegrationUser: string;
+  externalIntegrationUser: string | null;
   decision: string;
   comment: string | null;
   decidedAt: string;

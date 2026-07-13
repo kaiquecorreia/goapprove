@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../../shared/prisma/prisma.service';
-import { CreateUserDto } from '../dtos/create-user.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
-import { UserRepository, UserWithRelations } from './user.repository';
+import {
+  CreateUserData,
+  UserRepository,
+  UserWithPasswordHash,
+  UserWithRelations,
+} from './user.repository';
 
 const USER_INCLUDE = {
   companies: true,
@@ -11,11 +15,15 @@ const USER_INCLUDE = {
   substitutedBy: true,
 } as const;
 
+const USER_OMIT = {
+  passwordHash: true,
+} as const;
+
 @Injectable()
 export class PrismaUserRepository implements UserRepository {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async create(data: CreateUserDto): Promise<UserWithRelations> {
+  async create(data: CreateUserData): Promise<UserWithRelations> {
     const { companyIds, substituteIds, ...userData } = data;
 
     const client = this.prismaService.getClient();
@@ -46,6 +54,7 @@ export class PrismaUserRepository implements UserRepository {
     return client.user.findUniqueOrThrow({
       where: { userId: user.userId },
       include: USER_INCLUDE,
+      omit: USER_OMIT,
     });
   }
 
@@ -53,12 +62,14 @@ export class PrismaUserRepository implements UserRepository {
     return this.prismaService.getClient().user.findUnique({
       where: { userId },
       include: USER_INCLUDE,
+      omit: USER_OMIT,
     });
   }
 
   async findAll(): Promise<UserWithRelations[]> {
     return this.prismaService.getClient().user.findMany({
       include: USER_INCLUDE,
+      omit: USER_OMIT,
     });
   }
 
@@ -68,6 +79,37 @@ export class PrismaUserRepository implements UserRepository {
     return this.prismaService.getClient().user.findUnique({
       where: { externalIntegrationUser },
       include: USER_INCLUDE,
+      omit: USER_OMIT,
+    });
+  }
+
+  // Only for the login use case — the only place allowed to read the hash.
+  async findByEmailForAuth(
+    email: string,
+  ): Promise<UserWithPasswordHash | null> {
+    return this.prismaService.getClient().user.findUnique({
+      where: { email },
+      include: USER_INCLUDE,
+    });
+  }
+
+  async updatePasswordHash(
+    userId: string,
+    passwordHash: string,
+  ): Promise<UserWithRelations | null> {
+    const client = this.prismaService.getClient();
+
+    const exists = await client.user.findUnique({ where: { userId } });
+
+    if (!exists) {
+      return null;
+    }
+
+    return client.user.update({
+      where: { userId },
+      data: { passwordHash },
+      include: USER_INCLUDE,
+      omit: USER_OMIT,
     });
   }
 
@@ -112,6 +154,7 @@ export class PrismaUserRepository implements UserRepository {
       where: { userId },
       data: userData,
       include: USER_INCLUDE,
+      omit: USER_OMIT,
     });
   }
 }

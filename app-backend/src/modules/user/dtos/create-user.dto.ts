@@ -10,6 +10,7 @@ import {
   IsUUID,
   MaxLength,
   Min,
+  MinLength,
 } from 'class-validator';
 import { UserRole } from '@prisma/client';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -27,11 +28,17 @@ export class CreateUserDto {
   @MaxLength(150)
   email!: string;
 
-  @ApiProperty({ maxLength: 50 })
+  @ApiPropertyOptional({ maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  externalIntegrationUser?: string;
+
+  @ApiProperty({ minLength: 8 })
   @IsString()
   @IsNotEmpty()
-  @MaxLength(50)
-  externalIntegrationUser!: string;
+  @MinLength(8)
+  password!: string;
 
   @ApiProperty({ enum: UserRole })
   @IsEnum(UserRole)

@@ -21,7 +21,9 @@ import {
 const WORKFLOW_INCLUDE = {
   levels: {
     include: {
-      approvers: { include: { user: true } },
+      approvers: {
+        include: { user: { omit: { passwordHash: true } } },
+      },
       decisions: true,
     },
     orderBy: { level: 'asc' },
