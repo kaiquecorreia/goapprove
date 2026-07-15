@@ -7,7 +7,6 @@ import {
   Users,
   Building2,
   ShieldCheck,
-  Plug,
 } from 'lucide-react';
 
 type RoutesType = {
@@ -165,12 +164,6 @@ export const navigationGroups: NavigationGroup[] = [
         href: ERoutePath.COMPANIES,
         icon: Building2,
         allowedRoles: [EUserRole.OWNER, EUserRole.ADMINISTRATOR, EUserRole.EXTERNAL_INTEGRATION],
-      },
-      {
-        name: 'Integrações',
-        href: ERoutePath.INTEGRATIONS,
-        icon: Plug,
-        allowedRoles: [EUserRole.OWNER, EUserRole.ADMINISTRATOR],
       },
     ],
   },
