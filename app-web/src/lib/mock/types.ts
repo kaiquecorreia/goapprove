@@ -2,7 +2,7 @@ import type { EUserRole } from '@/config/navigation';
 
 export type OCStatus = 'pending' | 'approved' | 'rejected' | 'cancelled' | 'no_rule' | 'error';
 
-export type LNStatus = 'received' | 'synced' | 'pending_send' | 'failed';
+export type LNStatus = 'received' | 'synced' | 'pending_send' | 'failed' | 'not_applicable';
 
 export type ApprovalMode = 'ANY' | 'ALL' | 'SEQUENTIAL';
 
@@ -58,8 +58,8 @@ export interface ApprovalLevel {
   level: number;
   mode: ApprovalMode;
   approvers: string[];
-  sla: number;
-  status: 'pending' | 'approved' | 'rejected';
+  sla?: number;
+  status: 'locked' | 'pending' | 'approved' | 'rejected' | 'skipped';
 }
 
 export interface TimelineEvent {
@@ -122,6 +122,25 @@ export interface PurchaseOrder {
   timeline: TimelineEvent[];
   appliedRule?: string;
   comments: OcComment[];
+}
+
+export interface PurchaseOrderDetail {
+  id: string;
+  number: string;
+  company: string;
+  supplier: string;
+  requester: string;
+  buyer: string;
+  total: number;
+  project: string;
+  costCenter: string;
+  status: OCStatus;
+  lnStatus: LNStatus;
+  receivedAt: string;
+  items: OCItem[];
+  workflow: ApprovalLevel[];
+  timeline: TimelineEvent[];
+  appliedRule?: string;
 }
 
 export type RuleConditionSourceType = 'PO_HEADER' | 'PO_LINE' | 'PO_ADDITIONAL';

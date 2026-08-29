@@ -5,6 +5,7 @@ import {
   ApprovalWorkflowLevel,
   Company,
   PurchaseOrder,
+  PurchaseOrderLine,
   User,
   WorkflowAuditEvent,
 } from '@prisma/client';
@@ -21,5 +22,9 @@ export type ApprovalWorkflowLevelWithRelations = ApprovalWorkflowLevel & {
 export type WorkflowWithRelations = ApprovalWorkflow & {
   levels: ApprovalWorkflowLevelWithRelations[];
   auditEvents: WorkflowAuditEvent[];
-  purchaseOrder: PurchaseOrder & { company: Company };
+  purchaseOrder: PurchaseOrder & {
+    company: Company;
+    lines: PurchaseOrderLine[];
+  };
+  rule: { name: string; code: string } | null;
 };

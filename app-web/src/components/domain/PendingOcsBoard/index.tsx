@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { Check } from 'lucide-react';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -9,7 +9,9 @@ import { Button } from '@/components/ui/Button';
 import { Pagination } from '@/components/ui/Pagination';
 import { OcFiltersBar, EMPTY_OC_FILTERS, type OcFilters } from '@/components/domain/OcFiltersBar';
 import { OcTable } from '@/components/domain/OcTable';
+import { RejectReasonDialog } from '@/components/domain/RejectReasonDialog';
 import { getPendingPurchaseOrders } from '@/services/pendingPurchaseOrdersClient';
+import { postDecision } from '@/services/workflowDecisionsClient';
 import { feedback } from '@/services/feedback';
 import { EUserRole } from '@/config/navigation';
 import type { Company, OcTableRow, PendingPurchaseOrdersPage } from '@/lib/mock/types';
@@ -36,6 +38,8 @@ export function PendingOcsBoard({ companies }: PendingOcsBoardProps) {
   const [data, setData] = useState<PendingPurchaseOrdersPage>(EMPTY_PAGE);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string[]>([]);
+  const [rejectTarget, setRejectTarget] = useState<OcTableRow | null>(null);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     setPage(1);
@@ -48,36 +52,37 @@ export function PendingOcsBoard({ companies }: PendingOcsBoardProps) {
     filters.costCenter,
   ]);
 
-  useEffect(() => {
-    let active = true;
+  const fetchPending = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     setLoading(true);
 
-    const handle = setTimeout(async () => {
-      try {
-        const result = await getPendingPurchaseOrders({
-          page,
-          limit: PAGE_SIZE,
-          search: filters.search || undefined,
-          companyId: filters.companyId || undefined,
-          supplierCode: filters.supplierCode || undefined,
-          requesterCode: filters.requesterCode || undefined,
-          costCenter: filters.costCenter || undefined,
-        });
-        if (active) setData(result);
-      } catch (error) {
-        if (active) {
-          feedback.error(error instanceof Error ? error.message : 'Erro ao carregar OCs pendentes');
-        }
-      } finally {
-        if (active) setLoading(false);
+    try {
+      const result = await getPendingPurchaseOrders({
+        page,
+        limit: PAGE_SIZE,
+        search: filters.search || undefined,
+        companyId: filters.companyId || undefined,
+        supplierCode: filters.supplierCode || undefined,
+        requesterCode: filters.requesterCode || undefined,
+        costCenter: filters.costCenter || undefined,
+      });
+      if (requestIdRef.current === requestId) setData(result);
+    } catch (error) {
+      if (requestIdRef.current === requestId) {
+        feedback.error(error instanceof Error ? error.message : 'Erro ao carregar OCs pendentes');
       }
+    } finally {
+      if (requestIdRef.current === requestId) setLoading(false);
+    }
+  }, [filters, page]);
+
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      fetchPending();
     }, DEBOUNCE_MS);
 
-    return () => {
-      active = false;
-      clearTimeout(handle);
-    };
-  }, [filters, page]);
+    return () => clearTimeout(handle);
+  }, [fetchPending]);
 
   const toggleSelect = (id: string) => {
     setSelected((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
@@ -89,17 +94,52 @@ export function PendingOcsBoard({ companies }: PendingOcsBoardProps) {
     );
   };
 
-  const handleApprove = (order: OcTableRow) => {
-    feedback.success(`OC ${order.number} aprovada.`);
+  const handleApprove = async (order: OcTableRow) => {
+    try {
+      await postDecision(order.id, { decision: 'APPROVED' });
+      feedback.success(`OC ${order.number} aprovada.`);
+    } catch (error) {
+      feedback.error(
+        error instanceof Error ? error.message : `Erro ao aprovar OC ${order.number}.`,
+      );
+    } finally {
+      fetchPending();
+    }
   };
 
   const handleReject = (order: OcTableRow) => {
-    feedback.error(`OC ${order.number} rejeitada.`);
+    setRejectTarget(order);
   };
 
-  const handleBulkApprove = () => {
-    feedback.success(`${selected.length} OC(s) aprovadas.`);
+  const handleConfirmReject = async (comment: string) => {
+    if (!rejectTarget) return;
+
+    try {
+      await postDecision(rejectTarget.id, { decision: 'REJECTED', comment });
+      feedback.success(`OC ${rejectTarget.number} rejeitada.`);
+    } catch (error) {
+      feedback.error(
+        error instanceof Error ? error.message : `Erro ao rejeitar OC ${rejectTarget.number}.`,
+      );
+      throw error;
+    } finally {
+      fetchPending();
+    }
+  };
+
+  const handleBulkApprove = async () => {
+    const ids = selected;
+    const results = await Promise.allSettled(
+      ids.map((id) => postDecision(id, { decision: 'APPROVED' })),
+    );
+    const succeeded = results.filter((result) => result.status === 'fulfilled').length;
+    const failed = results.length - succeeded;
+
+    if (succeeded > 0) feedback.success(`${succeeded} OC(s) aprovada(s).`);
+    if (failed > 0) feedback.error(`${failed} OC(s) não puderam ser aprovadas.`);
+
     setSelected([]);
+    fetchPending();
   };
 
   const companyOptions = companies.map((company) => ({
@@ -160,6 +200,15 @@ export function PendingOcsBoard({ companies }: PendingOcsBoardProps) {
           )}
         </CardContent>
       </Card>
+
+      <RejectReasonDialog
+        open={rejectTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setRejectTarget(null);
+        }}
+        orderNumber={rejectTarget?.number}
+        onConfirm={handleConfirmReject}
+      />
     </div>
   );
 }

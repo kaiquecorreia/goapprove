@@ -1,7 +1,7 @@
-import type { PurchaseOrder } from '@/lib/mock/types';
+import type { PurchaseOrderDetail } from '@/lib/mock/types';
 import styles from './styles.module.scss';
 
-export function OcPayloadViewer({ order }: { order: PurchaseOrder }) {
+export function OcPayloadViewer({ order }: { order: PurchaseOrderDetail }) {
   const payload = {
     number: order.number,
     company: order.company,

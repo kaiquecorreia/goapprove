@@ -6,6 +6,7 @@ const LN_STATUS_MAP: Record<LNStatus, { label: string; variant: BadgeVariant }> 
   synced: { label: 'Sincronizado', variant: 'success' },
   pending_send: { label: 'Aguardando envio', variant: 'warning' },
   failed: { label: 'Falhou', variant: 'destructive' },
+  not_applicable: { label: 'Não aplicável', variant: 'secondary' },
 };
 
 export function LNBadge({ status }: { status: LNStatus }) {

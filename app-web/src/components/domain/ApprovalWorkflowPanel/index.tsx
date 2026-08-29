@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock, Lock, MinusCircle, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
 import type { ApprovalLevel } from '@/lib/mock/types';
@@ -8,6 +8,8 @@ const STATUS_ICON = {
   approved: <CheckCircle2 size={16} className={styles.success} />,
   rejected: <XCircle size={16} className={styles.destructive} />,
   pending: <Clock size={16} className={styles.warning} />,
+  locked: <Lock size={16} className={styles.muted} />,
+  skipped: <MinusCircle size={16} className={styles.muted} />,
 };
 
 export function ApprovalWorkflowPanel({ levels }: { levels: ApprovalLevel[] }) {
@@ -18,7 +20,7 @@ export function ApprovalWorkflowPanel({ levels }: { levels: ApprovalLevel[] }) {
           <div className={styles.levelHeader}>
             <span className={styles.levelBadge}>N{level.level}</span>
             <Badge variant="outline">{level.mode}</Badge>
-            <span className={styles.sla}>SLA: {level.sla}h</span>
+            {level.sla !== undefined && <span className={styles.sla}>SLA: {level.sla}h</span>}
           </div>
           <div className={styles.approvers}>
             {level.approvers.map((approver) => (

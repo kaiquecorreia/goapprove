@@ -29,7 +29,8 @@ const WORKFLOW_INCLUDE = {
     orderBy: { level: 'asc' },
   },
   auditEvents: { orderBy: { createdAt: 'asc' } },
-  purchaseOrder: { include: { company: true } },
+  purchaseOrder: { include: { company: true, lines: true } },
+  rule: { select: { name: true, code: true } },
 } satisfies Prisma.ApprovalWorkflowInclude;
 
 @Injectable()

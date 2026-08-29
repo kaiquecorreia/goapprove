@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, Check, X } from 'lucide-react';
@@ -12,22 +13,76 @@ import { LNBadge } from '@/components/domain/LNBadge';
 import { OcItemsTable } from '@/components/domain/OcItemsTable';
 import { ApprovalWorkflowPanel } from '@/components/domain/ApprovalWorkflowPanel';
 import { OcTimeline } from '@/components/domain/OcTimeline';
-import { OcCommentsSection } from '@/components/domain/OcCommentsSection';
 import { OcPayloadViewer } from '@/components/domain/OcPayloadViewer';
 import { AppliedRuleCard } from '@/components/domain/AppliedRuleCard';
-import { getPurchaseOrderById } from '@/services/purchaseOrders';
+import { RejectReasonDialog } from '@/components/domain/RejectReasonDialog';
+import { getPurchaseOrderDetail } from '@/services/purchaseOrderDetailClient';
+import { postDecision } from '@/services/workflowDecisionsClient';
 import { feedback } from '@/services/feedback';
 import { formatCurrency } from '@/lib/format/currency';
+import type { PurchaseOrderDetail } from '@/lib/mock/types';
 import styles from './styles.module.scss';
 
 export default function OcDetailPage() {
   const params = useParams<{ id: string }>();
-  const order = getPurchaseOrderById(params.id);
+  const [order, setOrder] = useState<PurchaseOrderDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [rejectOpen, setRejectOpen] = useState(false);
 
-  if (!order) {
+  const fetchOrder = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await getPurchaseOrderDetail(params.id);
+      setOrder(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao carregar a OC');
+    } finally {
+      setLoading(false);
+    }
+  }, [params.id]);
+
+  useEffect(() => {
+    fetchOrder();
+  }, [fetchOrder]);
+
+  const handleApprove = async () => {
+    if (!order) return;
+
+    try {
+      await postDecision(order.id, { decision: 'APPROVED' });
+      feedback.success(`OC ${order.number} aprovada.`);
+    } catch (err) {
+      feedback.error(err instanceof Error ? err.message : `Erro ao aprovar OC ${order.number}.`);
+    } finally {
+      fetchOrder();
+    }
+  };
+
+  const handleConfirmReject = async (comment: string) => {
+    if (!order) return;
+
+    try {
+      await postDecision(order.id, { decision: 'REJECTED', comment });
+      feedback.success(`OC ${order.number} rejeitada.`);
+    } catch (err) {
+      feedback.error(err instanceof Error ? err.message : `Erro ao rejeitar OC ${order.number}.`);
+      throw err;
+    } finally {
+      fetchOrder();
+    }
+  };
+
+  if (loading) {
+    return <p className={styles.stateMessage}>Carregando OC…</p>;
+  }
+
+  if (error || !order) {
     return (
       <div className={styles.notFound}>
-        <p>Ordem de compra não encontrada.</p>
+        <p>{error ?? 'Ordem de compra não encontrada.'}</p>
         <Link href="/ocs/pending">
           <Button variant="outline" leftIcon={<ArrowLeft size={16} />}>
             Voltar para OCs Pendentes
@@ -52,14 +107,11 @@ export default function OcDetailPage() {
               <Button
                 variant="outline"
                 leftIcon={<X size={16} />}
-                onClick={() => feedback.error(`OC ${order.number} rejeitada.`)}
+                onClick={() => setRejectOpen(true)}
               >
                 Rejeitar
               </Button>
-              <Button
-                leftIcon={<Check size={16} />}
-                onClick={() => feedback.success(`OC ${order.number} aprovada.`)}
-              >
+              <Button leftIcon={<Check size={16} />} onClick={handleApprove}>
                 Aprovar
               </Button>
             </>
@@ -105,19 +157,6 @@ export default function OcDetailPage() {
                     <span className={styles.summaryLabel}>Centro de custo</span>
                     <span className={styles.summaryValue}>{order.costCenter}</span>
                   </div>
-                  <div>
-                    <span className={styles.summaryLabel}>Categoria</span>
-                    <span className={styles.summaryValue}>{order.category}</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className={styles.commentsCard}>
-                <CardHeader>
-                  <CardTitle>Comentários</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <OcCommentsSection comments={order.comments} />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -161,6 +200,13 @@ export default function OcDetailPage() {
           </Card>
         </div>
       </div>
+
+      <RejectReasonDialog
+        open={rejectOpen}
+        onOpenChange={setRejectOpen}
+        orderNumber={order.number}
+        onConfirm={handleConfirmReject}
+      />
     </div>
   );
 }
