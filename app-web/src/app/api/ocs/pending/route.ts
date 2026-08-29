@@ -1,21 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
 import { AxiosError } from 'axios';
 
-import { baseAuthOptions } from '@/lib/auth';
+import { requireSession, unauthorizedResponse } from '@/lib/apiAuth';
 import { resolveBackendAccessToken } from '@/lib/backendAuth';
 import { internalApiClient } from '@/services/api';
-import { ERoutePath, canAccessRoute } from '@/config/navigation';
-
-async function requirePendingOcsAccessSession() {
-  const session = await getServerSession(baseAuthOptions);
-
-  if (!session?.role || !canAccessRoute(session.role, ERoutePath.OCS_PENDING)) {
-    return null;
-  }
-
-  return session;
-}
 
 const FORWARDED_PARAMS = [
   'page',
@@ -28,10 +16,10 @@ const FORWARDED_PARAMS = [
 ] as const;
 
 export async function GET(req: NextRequest) {
-  const session = await requirePendingOcsAccessSession();
+  const session = await requireSession();
 
   if (!session) {
-    return NextResponse.json({ message: 'Não autorizado' }, { status: 403 });
+    return unauthorizedResponse();
   }
 
   const params: Record<string, string> = {};

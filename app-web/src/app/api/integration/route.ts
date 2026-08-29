@@ -1,29 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
 import { AxiosError } from 'axios';
 
-import { baseAuthOptions } from '@/lib/auth';
+import { requireSession, unauthorizedResponse } from '@/lib/apiAuth';
 import { internalApiClient } from '@/services/api';
 
-async function requireOwnerOrAdminSession() {
-  const session = await getServerSession(baseAuthOptions);
-
-  if (
-    !session?.companyId ||
-    !session?.externalIntegrationUser ||
-    (session.role !== 'OWNER' && session.role !== 'ADMINISTRATOR')
-  ) {
-    return null;
-  }
-
-  return session;
-}
-
 export async function GET() {
-  const session = await requireOwnerOrAdminSession();
+  const session = await requireSession();
 
   if (!session) {
-    return NextResponse.json({ message: 'Não autorizado' }, { status: 403 });
+    return unauthorizedResponse();
   }
 
   try {
@@ -45,10 +30,10 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
-  const session = await requireOwnerOrAdminSession();
+  const session = await requireSession();
 
   if (!session) {
-    return NextResponse.json({ message: 'Não autorizado' }, { status: 403 });
+    return unauthorizedResponse();
   }
 
   const body = await req.json();

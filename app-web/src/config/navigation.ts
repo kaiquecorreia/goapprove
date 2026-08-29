@@ -108,6 +108,22 @@ export function canAccessRoute(role: EUserRole, pathname: string): boolean {
   return dynamicParent ? allowed.includes(dynamicParent.parent) : false;
 }
 
+// Maps API route prefixes to the page permission that governs them, since API
+// paths (e.g. /api/users/[userId]/password) don't mirror page paths 1:1.
+// /api/integration is deliberately excluded — its access rule isn't role-based
+// (see middleware.ts).
+const API_ROUTE_ACCESS: { prefix: string; routePath: ERoutePath }[] = [
+  { prefix: '/api/companies', routePath: ERoutePath.COMPANIES },
+  { prefix: '/api/ocs', routePath: ERoutePath.OCS_PENDING },
+  { prefix: '/api/rules', routePath: ERoutePath.RULES },
+  { prefix: '/api/users', routePath: ERoutePath.USERS },
+];
+
+export function resolveApiRoutePath(pathname: string): ERoutePath | null {
+  const match = API_ROUTE_ACCESS.find((r) => pathname.startsWith(r.prefix));
+  return match ? match.routePath : null;
+}
+
 export type NavigationItem = {
   name: string;
   href: ERoutePath;

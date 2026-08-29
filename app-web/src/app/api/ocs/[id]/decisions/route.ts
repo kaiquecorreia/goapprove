@@ -1,27 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
 import { AxiosError } from 'axios';
 
-import { baseAuthOptions } from '@/lib/auth';
+import { requireSession, unauthorizedResponse } from '@/lib/apiAuth';
 import { resolveBackendAccessToken } from '@/lib/backendAuth';
 import { internalApiClient } from '@/services/api';
-import { ERoutePath, canAccessRoute } from '@/config/navigation';
-
-async function requireOcDetailAccessSession() {
-  const session = await getServerSession(baseAuthOptions);
-
-  if (!session?.role || !canAccessRoute(session.role, ERoutePath.OCS_PENDING)) {
-    return null;
-  }
-
-  return session;
-}
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await requireOcDetailAccessSession();
+  const session = await requireSession();
 
   if (!session) {
-    return NextResponse.json({ message: 'Não autorizado' }, { status: 403 });
+    return unauthorizedResponse();
   }
 
   const { id } = await params;
