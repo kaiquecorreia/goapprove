@@ -21,9 +21,11 @@ import {
 } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 
+import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { Roles } from '../../shared/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
+import { AuthenticatedUser } from '../../shared/types/authenticated-user';
 import { CreateRuleDto } from './dtos/create-rule.dto';
 import { SetRuleStatusDto } from './dtos/set-rule-status.dto';
 import { UpdateRuleDto } from './dtos/update-rule.dto';
@@ -58,16 +60,22 @@ export class RuleController {
   @ApiBody({ type: CreateRuleDto })
   @ApiResponse({ status: 201, description: 'Rule created successfully' })
   @ApiResponse({ status: 409, description: 'Rule code already exists' })
-  create(@Body() data: CreateRuleDto) {
-    return this.createRuleUseCase.execute(data);
+  create(
+    @Body() data: CreateRuleDto,
+    @CurrentUser() actingUser: AuthenticatedUser,
+  ) {
+    return this.createRuleUseCase.execute(data, actingUser);
   }
 
   @Get()
   @ApiOperation({ summary: 'List rules, optionally filtered by company' })
   @ApiQuery({ name: 'companyId', required: false, format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Rules listed successfully' })
-  findAll(@Query('companyId') companyId?: string) {
-    return this.getRuleUseCase.executeAll(companyId);
+  findAll(
+    @Query('companyId') companyId: string | undefined,
+    @CurrentUser() actingUser: AuthenticatedUser,
+  ) {
+    return this.getRuleUseCase.executeAll(companyId, actingUser);
   }
 
   @Get(':ruleId')
@@ -77,8 +85,9 @@ export class RuleController {
   @ApiResponse({ status: 404, description: 'Rule not found' })
   findById(
     @Param('ruleId', new ParseUUIDPipe({ version: '4' })) ruleId: string,
+    @CurrentUser() actingUser: AuthenticatedUser,
   ) {
-    return this.getRuleUseCase.executeById(ruleId);
+    return this.getRuleUseCase.executeById(ruleId, actingUser);
   }
 
   @Patch(':ruleId')
@@ -91,8 +100,9 @@ export class RuleController {
   update(
     @Param('ruleId', new ParseUUIDPipe({ version: '4' })) ruleId: string,
     @Body() data: UpdateRuleDto,
+    @CurrentUser() actingUser: AuthenticatedUser,
   ) {
-    return this.updateRuleUseCase.execute(ruleId, data);
+    return this.updateRuleUseCase.execute(ruleId, data, actingUser);
   }
 
   @Patch(':ruleId/status')
@@ -104,8 +114,9 @@ export class RuleController {
   setStatus(
     @Param('ruleId', new ParseUUIDPipe({ version: '4' })) ruleId: string,
     @Body() dto: SetRuleStatusDto,
+    @CurrentUser() actingUser: AuthenticatedUser,
   ) {
-    return this.setRuleStatusUseCase.execute(ruleId, dto.status);
+    return this.setRuleStatusUseCase.execute(ruleId, dto.status, actingUser);
   }
 
   @Delete(':ruleId')
@@ -113,7 +124,10 @@ export class RuleController {
   @ApiOperation({ summary: 'Soft-delete (deactivate) a rule' })
   @ApiParam({ name: 'ruleId', type: String, format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Rule deactivated' })
-  remove(@Param('ruleId', new ParseUUIDPipe({ version: '4' })) ruleId: string) {
-    return this.deleteRuleUseCase.execute(ruleId);
+  remove(
+    @Param('ruleId', new ParseUUIDPipe({ version: '4' })) ruleId: string,
+    @CurrentUser() actingUser: AuthenticatedUser,
+  ) {
+    return this.deleteRuleUseCase.execute(ruleId, actingUser);
   }
 }

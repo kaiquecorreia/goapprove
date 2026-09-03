@@ -18,7 +18,9 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
+import { AuthenticatedUser } from '../../shared/types/authenticated-user';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { SetPasswordDto } from './dtos/set-password.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
@@ -47,15 +49,18 @@ export class UserController {
     status: 409,
     description: 'Email or external integration user already exists',
   })
-  create(@Body() data: CreateUserDto) {
-    return this.createUserUseCase.execute(data);
+  create(
+    @Body() data: CreateUserDto,
+    @CurrentUser() actingUser: AuthenticatedUser,
+  ) {
+    return this.createUserUseCase.executeAuthorized(data, actingUser);
   }
 
   @Get()
   @ApiOperation({ summary: 'List all users' })
   @ApiResponse({ status: 200, description: 'Users listed successfully' })
-  findAll() {
-    return this.getUserUseCase.executeAll();
+  findAll(@CurrentUser() actingUser: AuthenticatedUser) {
+    return this.getUserUseCase.executeAll(actingUser);
   }
 
   @Get(':userId')
@@ -65,8 +70,9 @@ export class UserController {
   @ApiResponse({ status: 404, description: 'User not found' })
   findById(
     @Param('userId', new ParseUUIDPipe({ version: '4' })) userId: string,
+    @CurrentUser() actingUser: AuthenticatedUser,
   ) {
-    return this.getUserUseCase.executeById(userId);
+    return this.getUserUseCase.executeById(userId, actingUser);
   }
 
   @Patch(':userId')
@@ -86,8 +92,9 @@ export class UserController {
   update(
     @Param('userId', new ParseUUIDPipe({ version: '4' })) userId: string,
     @Body() data: UpdateUserDto,
+    @CurrentUser() actingUser: AuthenticatedUser,
   ) {
-    return this.updateUserUseCase.execute(userId, data);
+    return this.updateUserUseCase.execute(userId, data, actingUser);
   }
 
   @Patch(':userId/password')
@@ -100,7 +107,8 @@ export class UserController {
   async setPassword(
     @Param('userId', new ParseUUIDPipe({ version: '4' })) userId: string,
     @Body() data: SetPasswordDto,
+    @CurrentUser() actingUser: AuthenticatedUser,
   ) {
-    await this.setUserPasswordUseCase.execute(userId, data);
+    await this.setUserPasswordUseCase.execute(userId, data, actingUser);
   }
 }

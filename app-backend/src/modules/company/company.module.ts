@@ -8,6 +8,7 @@ import { PrismaCompanyRepository } from './repositories/prisma-company.repositor
 import { CompanyRepository } from './repositories/company.repository';
 import { CompanyUserRepository } from './repositories/company-user.repository';
 import { PrismaCompanyUserRepository } from './repositories/prisma-company-user.repository';
+import { CompanyAccessService } from './services/company-access.service';
 import { CompanyService } from './services/company.service';
 import { CreateCompanyUseCase } from './use-cases/create-company.use-case';
 import { GetCompanyUseCase } from './use-cases/get-company.use-case';
@@ -19,6 +20,7 @@ import { UpdateCompanyUseCase } from './use-cases/update-company.use-case';
   providers: [
     PrismaService,
     CompanyService,
+    CompanyAccessService,
     CreateCompanyUseCase,
     GetCompanyUseCase,
     UpdateCompanyUseCase,
@@ -29,6 +31,7 @@ import { UpdateCompanyUseCase } from './use-cases/update-company.use-case';
     CompanyRepository,
     CompanyUserRepository,
     CompanyService,
+    CompanyAccessService,
     CreateCompanyUseCase,
   ],
 })

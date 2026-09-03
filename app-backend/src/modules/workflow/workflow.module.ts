@@ -5,6 +5,7 @@ import { PrismaModule } from '../../shared/prisma/prisma.module';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { AppJwtModule } from '../../shared/jwt/app-jwt.module';
 import { CryptoModule } from '../../shared/crypto/crypto.module';
+import { CompanyModule } from '../company/company.module';
 import { OnboardingModule } from '../onboarding/onboarding.module';
 import { UserModule } from '../user/user.module';
 import { PrismaWorkflowRepository } from './repositories/prisma-workflow.repository';
@@ -23,6 +24,7 @@ import { WorkflowController } from './workflow.controller';
     PrismaModule,
     AppJwtModule,
     CryptoModule,
+    CompanyModule,
     OnboardingModule,
     UserModule,
     HttpModule,

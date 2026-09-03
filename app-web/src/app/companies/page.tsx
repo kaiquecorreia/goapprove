@@ -5,10 +5,16 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { CompaniesTable } from '@/components/domain/CompaniesTable';
 import { CompanyFormDialog } from '@/components/domain/CompanyFormDialog';
 import { getCompanies } from '@/services/companies';
+import { requireSession } from '@/lib/apiAuth';
+import { EUserRole } from '@/config/navigation';
 import styles from './styles.module.scss';
 
 export default async function EmpresasPage() {
-  const companies = await getCompanies();
+  const [companies, session] = await Promise.all([
+    getCompanies(),
+    requireSession(),
+  ]);
+  const isAdministrator = session?.role === EUserRole.ADMINISTRATOR;
 
   return (
     <div className={styles.page}>
@@ -16,9 +22,11 @@ export default async function EmpresasPage() {
         title="Empresas"
         description="Empresas integradas ao ERP Infor LN."
         actions={
-          <CompanyFormDialog
-            trigger={<Button leftIcon={<Plus size={16} />}>Nova empresa</Button>}
-          />
+          isAdministrator ? (
+            <CompanyFormDialog
+              trigger={<Button leftIcon={<Plus size={16} />}>Nova empresa</Button>}
+            />
+          ) : undefined
         }
       />
 

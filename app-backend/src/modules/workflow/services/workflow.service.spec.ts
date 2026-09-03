@@ -2,8 +2,16 @@ import { LnSyncService } from './ln-sync.service';
 import { WorkflowService } from './workflow.service';
 import { WorkflowRepository } from '../repositories/workflow.repository';
 import { UserRepository } from '../../user/repositories/user.repository';
+import { CompanyAccessService } from '../../company/services/company-access.service';
 import { TransactionService } from '../../../shared/prisma/transaction.service';
+import { AuthenticatedUser } from '../../../shared/types/authenticated-user';
 import { WorkflowWithRelations } from '../types/workflow-with-relations';
+
+const ADMIN_USER: AuthenticatedUser = {
+  userId: 'admin-1',
+  role: 'ADMINISTRATOR',
+  email: 'admin@x.com',
+};
 
 function buildApprover(overrides: Record<string, unknown> = {}) {
   return {
@@ -43,6 +51,7 @@ function buildWorkflow(
     lnSyncStatus: 'NOT_APPLICABLE',
     levels: [buildLevel()],
     auditEvents: [],
+    purchaseOrder: { companyId: 'company-1' },
     ...overrides,
   } as unknown as WorkflowWithRelations;
 }
@@ -52,6 +61,12 @@ describe('WorkflowService', () => {
   let userRepository: jest.Mocked<Pick<UserRepository, 'findById'>>;
   let transactionService: { run: jest.Mock };
   let lnSyncService: jest.Mocked<Pick<LnSyncService, 'sendResult'>>;
+  let companyAccessService: jest.Mocked<
+    Pick<
+      CompanyAccessService,
+      'getAccessibleCompanyIds' | 'assertCompanyAccess'
+    >
+  >;
   let service: WorkflowService;
 
   beforeEach(() => {
@@ -73,12 +88,17 @@ describe('WorkflowService', () => {
     userRepository = { findById: jest.fn().mockResolvedValue(null) };
     transactionService = { run: jest.fn((fn: () => Promise<unknown>) => fn()) };
     lnSyncService = { sendResult: jest.fn().mockResolvedValue(undefined) };
+    companyAccessService = {
+      getAccessibleCompanyIds: jest.fn().mockResolvedValue(null),
+      assertCompanyAccess: jest.fn().mockResolvedValue(undefined),
+    };
 
     service = new WorkflowService(
       workflowRepository,
       userRepository as unknown as UserRepository,
       transactionService as unknown as TransactionService,
       lnSyncService as unknown as LnSyncService,
+      companyAccessService as unknown as CompanyAccessService,
     );
   });
 
@@ -411,7 +431,7 @@ describe('WorkflowService', () => {
         buildWorkflow({ lnSyncStatus: 'SYNCED' }),
       );
 
-      await expect(service.retryLnSync('po-1')).rejects.toThrow(
+      await expect(service.retryLnSync('po-1', ADMIN_USER)).rejects.toThrow(
         'LN sync is not in a FAILED state',
       );
       expect(lnSyncService.sendResult).not.toHaveBeenCalled();
@@ -422,15 +442,18 @@ describe('WorkflowService', () => {
         buildWorkflow({ lnSyncStatus: 'FAILED' }),
       );
 
-      await service.retryLnSync('po-1');
+      await service.retryLnSync('po-1', ADMIN_USER);
 
       expect(lnSyncService.sendResult).toHaveBeenCalledWith('workflow-1');
     });
   });
 
   describe('findPending', () => {
-    it('OWNER: consulta sem restrição de usuário (visão da empresa toda)', async () => {
+    it('OWNER sem companyId na query: restringe às próprias empresas (evita vazamento entre empresas)', async () => {
       workflowRepository.findPending.mockResolvedValue({ items: [], total: 0 });
+      companyAccessService.getAccessibleCompanyIds.mockResolvedValue([
+        'company-1',
+      ]);
 
       await service.findPending(
         { userId: 'owner-1', role: 'OWNER', email: 'owner@x.com' },
@@ -438,10 +461,10 @@ describe('WorkflowService', () => {
       );
 
       expect(workflowRepository.findPending).toHaveBeenCalledWith({
+        companyIds: ['company-1'],
         skip: 0,
         take: 20,
         search: undefined,
-        companyId: undefined,
         supplierCode: undefined,
         requesterCode: undefined,
         costCenter: undefined,
@@ -449,8 +472,23 @@ describe('WorkflowService', () => {
       expect(userRepository.findById).not.toHaveBeenCalled();
     });
 
+    it('OWNER passando um companyId fora das suas empresas: 403', async () => {
+      companyAccessService.getAccessibleCompanyIds.mockResolvedValue([
+        'company-1',
+      ]);
+
+      await expect(
+        service.findPending(
+          { userId: 'owner-1', role: 'OWNER', email: 'owner@x.com' },
+          { page: 1, limit: 20, companyId: 'company-2' },
+        ),
+      ).rejects.toThrow('You do not have access to this resource');
+      expect(workflowRepository.findPending).not.toHaveBeenCalled();
+    });
+
     it('ADMINISTRATOR: consulta sem restrição de usuário, repassando filtros e paginação', async () => {
       workflowRepository.findPending.mockResolvedValue({ items: [], total: 0 });
+      companyAccessService.getAccessibleCompanyIds.mockResolvedValue(null);
 
       await service.findPending(
         { userId: 'admin-1', role: 'ADMINISTRATOR', email: 'admin@x.com' },
@@ -458,10 +496,10 @@ describe('WorkflowService', () => {
       );
 
       expect(workflowRepository.findPending).toHaveBeenCalledWith({
+        companyId: 'company-1',
         skip: 10,
         take: 10,
         search: '4500012345',
-        companyId: 'company-1',
         supplierCode: undefined,
         requesterCode: undefined,
         costCenter: undefined,
@@ -486,7 +524,6 @@ describe('WorkflowService', () => {
         skip: 0,
         take: 20,
         search: undefined,
-        companyId: undefined,
         supplierCode: undefined,
         requesterCode: undefined,
         costCenter: undefined,

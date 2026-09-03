@@ -66,8 +66,11 @@ export class PrismaUserRepository implements UserRepository {
     });
   }
 
-  async findAll(): Promise<UserWithRelations[]> {
+  async findAll(companyIds?: string[]): Promise<UserWithRelations[]> {
     return this.prismaService.getClient().user.findMany({
+      where: companyIds
+        ? { companies: { some: { companyId: { in: companyIds } } } }
+        : undefined,
       include: USER_INCLUDE,
       omit: USER_OMIT,
     });

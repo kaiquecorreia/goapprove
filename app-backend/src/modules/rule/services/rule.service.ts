@@ -6,9 +6,11 @@ import {
 } from '@nestjs/common';
 import { Prisma, RuleStatus, UserRole } from '@prisma/client';
 
+import { CompanyAccessService } from '../../company/services/company-access.service';
 import { CompanyUserRepository } from '../../company/repositories/company-user.repository';
 import { UserRepository } from '../../user/repositories/user.repository';
 import { TransactionService } from '../../../shared/prisma/transaction.service';
+import { AuthenticatedUser } from '../../../shared/types/authenticated-user';
 import { CreateRuleDto } from '../dtos/create-rule.dto';
 import { UpdateRuleDto } from '../dtos/update-rule.dto';
 import { RuleRepository } from '../repositories/rule.repository';
@@ -34,9 +36,13 @@ export class RuleService {
     private readonly userRepository: UserRepository,
     private readonly companyUserRepository: CompanyUserRepository,
     private readonly transactionService: TransactionService,
+    private readonly companyAccessService: CompanyAccessService,
   ) {}
 
-  async create(data: CreateRuleDto) {
+  async create(data: CreateRuleDto, actingUser: AuthenticatedUser) {
+    await this.companyAccessService.assertCompanyAccess(actingUser, [
+      data.companyId,
+    ]);
     this.validateConditions(data.conditions);
     await this.validateLevels(data.levels, data.companyId);
 
@@ -53,21 +59,43 @@ export class RuleService {
     });
   }
 
-  async findById(ruleId: string) {
+  async findById(ruleId: string, actingUser: AuthenticatedUser) {
     const rule = await this.ruleRepository.findById(ruleId);
 
     if (!rule) {
       throw new NotFoundException(`Rule with id ${ruleId} not found`);
     }
 
+    await this.companyAccessService.assertCompanyAccess(actingUser, [
+      rule.companyId,
+    ]);
+
     return rule;
   }
 
-  async findAll(companyId?: string) {
-    return this.ruleRepository.findAll(companyId ? { companyId } : undefined);
+  async findAll(companyId: string | undefined, actingUser: AuthenticatedUser) {
+    const accessibleCompanyIds =
+      await this.companyAccessService.getAccessibleCompanyIds(actingUser);
+
+    if (accessibleCompanyIds === null) {
+      return this.ruleRepository.findAll(companyId ? { companyId } : undefined);
+    }
+
+    if (companyId) {
+      await this.companyAccessService.assertCompanyAccess(actingUser, [
+        companyId,
+      ]);
+      return this.ruleRepository.findAll({ companyId });
+    }
+
+    return this.ruleRepository.findAll({ companyIds: accessibleCompanyIds });
   }
 
-  async update(ruleId: string, data: UpdateRuleDto) {
+  async update(
+    ruleId: string,
+    data: UpdateRuleDto,
+    actingUser: AuthenticatedUser,
+  ) {
     if (data.conditions) {
       this.validateConditions(data.conditions);
     }
@@ -77,6 +105,16 @@ export class RuleService {
 
       if (!existing) {
         throw new NotFoundException(`Rule with id ${ruleId} not found`);
+      }
+
+      await this.companyAccessService.assertCompanyAccess(actingUser, [
+        existing.companyId,
+      ]);
+
+      if (data.companyId && data.companyId !== existing.companyId) {
+        await this.companyAccessService.assertCompanyAccess(actingUser, [
+          data.companyId,
+        ]);
       }
 
       if (data.levels) {
@@ -104,8 +142,22 @@ export class RuleService {
     });
   }
 
-  async setStatus(ruleId: string, status: RuleStatus) {
+  async setStatus(
+    ruleId: string,
+    status: RuleStatus,
+    actingUser: AuthenticatedUser,
+  ) {
     return this.transactionService.run(async () => {
+      const existing = await this.ruleRepository.findById(ruleId);
+
+      if (!existing) {
+        throw new NotFoundException(`Rule with id ${ruleId} not found`);
+      }
+
+      await this.companyAccessService.assertCompanyAccess(actingUser, [
+        existing.companyId,
+      ]);
+
       const rule = await this.ruleRepository.update(ruleId, { status });
 
       if (!rule) {
@@ -116,8 +168,8 @@ export class RuleService {
     });
   }
 
-  async delete(ruleId: string) {
-    return this.setStatus(ruleId, RuleStatus.INACTIVE);
+  async delete(ruleId: string, actingUser: AuthenticatedUser) {
+    return this.setStatus(ruleId, RuleStatus.INACTIVE, actingUser);
   }
 
   private validateConditions(conditions: CreateRuleDto['conditions']) {

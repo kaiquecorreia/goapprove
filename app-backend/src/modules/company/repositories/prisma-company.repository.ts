@@ -28,8 +28,10 @@ export class PrismaCompanyRepository implements CompanyRepository {
     });
   }
 
-  async findAll(): Promise<Company[]> {
-    return this.prismaService.getClient().company.findMany();
+  async findAll(companyIds?: string[]): Promise<Company[]> {
+    return this.prismaService.getClient().company.findMany({
+      where: companyIds ? { companyId: { in: companyIds } } : undefined,
+    });
   }
 
   async update(

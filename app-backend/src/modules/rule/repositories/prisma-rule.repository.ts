@@ -62,9 +62,18 @@ export class PrismaRuleRepository implements RuleRepository {
     });
   }
 
-  async findAll(filter?: { companyId?: string }): Promise<RuleWithRelations[]> {
+  async findAll(filter?: {
+    companyId?: string;
+    companyIds?: string[];
+  }): Promise<RuleWithRelations[]> {
+    const where = filter?.companyId
+      ? { companyId: filter.companyId }
+      : filter?.companyIds
+        ? { companyId: { in: filter.companyIds } }
+        : undefined;
+
     return this.prismaService.getClient().rule.findMany({
-      where: filter?.companyId ? { companyId: filter.companyId } : undefined,
+      where,
       include: RULE_INCLUDE,
       orderBy: { priority: 'asc' },
     });

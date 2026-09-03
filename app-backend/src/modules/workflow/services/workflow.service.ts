@@ -8,6 +8,7 @@ import {
 import { ApprovalMode, LevelStatus } from '@prisma/client';
 
 import { UserRepository } from '../../user/repositories/user.repository';
+import { CompanyAccessService } from '../../company/services/company-access.service';
 import { TransactionService } from '../../../shared/prisma/transaction.service';
 import { AuthenticatedUser } from '../../../shared/types/authenticated-user';
 import { MatchedRuleResult } from '../../rule/types/matched-rule-result';
@@ -31,6 +32,7 @@ export class WorkflowService {
     private readonly userRepository: UserRepository,
     private readonly transactionService: TransactionService,
     private readonly lnSyncService: LnSyncService,
+    private readonly companyAccessService: CompanyAccessService,
   ) {}
 
   async startWorkflow(
@@ -96,7 +98,9 @@ export class WorkflowService {
     });
   }
 
-  async findByPurchaseOrderId(
+  // Raw lookup, no authorization — reused internally by recordDecision (already
+  // authorized via resolveActingApprover) and by the public, checked entry points below.
+  private async fetchByPurchaseOrderId(
     purchaseOrderId: string,
   ): Promise<WorkflowWithRelations> {
     const workflow =
@@ -111,6 +115,19 @@ export class WorkflowService {
     return workflow;
   }
 
+  async findByPurchaseOrderId(
+    purchaseOrderId: string,
+    actingUser: AuthenticatedUser,
+  ): Promise<WorkflowWithRelations> {
+    const workflow = await this.fetchByPurchaseOrderId(purchaseOrderId);
+
+    await this.companyAccessService.assertCompanyAccess(actingUser, [
+      workflow.purchaseOrder.companyId,
+    ]);
+
+    return workflow;
+  }
+
   async findPending(
     user: AuthenticatedUser,
     query: ListPendingWorkflowsDto,
@@ -119,7 +136,6 @@ export class WorkflowService {
     const limit = query.limit ?? 20;
     const filters = {
       search: query.search,
-      companyId: query.companyId,
       supplierCode: query.supplierCode,
       requesterCode: query.requesterCode,
       costCenter: query.costCenter,
@@ -132,11 +148,36 @@ export class WorkflowService {
 
     if (isCompanyWideViewer) {
       // Supervisory view: every pending PO in the company, not just their own approvals.
-      result = await this.workflowRepository.findPending({
-        skip: (page - 1) * limit,
-        take: limit,
-        ...filters,
-      });
+      const accessibleCompanyIds =
+        await this.companyAccessService.getAccessibleCompanyIds(user);
+
+      if (accessibleCompanyIds === null) {
+        // ADMINISTRATOR — unrestricted, same behavior as before.
+        result = await this.workflowRepository.findPending({
+          companyId: query.companyId,
+          skip: (page - 1) * limit,
+          take: limit,
+          ...filters,
+        });
+      } else {
+        if (
+          query.companyId &&
+          !accessibleCompanyIds.includes(query.companyId)
+        ) {
+          throw new ForbiddenException(
+            'You do not have access to this resource',
+          );
+        }
+
+        result = await this.workflowRepository.findPending({
+          companyIds: query.companyId
+            ? [query.companyId]
+            : accessibleCompanyIds,
+          skip: (page - 1) * limit,
+          take: limit,
+          ...filters,
+        });
+      }
     } else {
       const currentUser = await this.userRepository.findById(user.userId);
       const substitutedForIds = (currentUser?.substitutedBy ?? []).map(
@@ -281,18 +322,25 @@ export class WorkflowService {
       return false;
     });
 
-    const result = await this.findByPurchaseOrderId(input.purchaseOrderId);
+    const result = await this.fetchByPurchaseOrderId(input.purchaseOrderId);
 
     if (finalized) {
       await this.lnSyncService.sendResult(result.workflowId);
-      return this.findByPurchaseOrderId(input.purchaseOrderId);
+      return this.fetchByPurchaseOrderId(input.purchaseOrderId);
     }
 
     return result;
   }
 
-  async retryLnSync(purchaseOrderId: string): Promise<WorkflowWithRelations> {
-    const workflow = await this.findByPurchaseOrderId(purchaseOrderId);
+  async retryLnSync(
+    purchaseOrderId: string,
+    actingUser: AuthenticatedUser,
+  ): Promise<WorkflowWithRelations> {
+    const workflow = await this.fetchByPurchaseOrderId(purchaseOrderId);
+
+    await this.companyAccessService.assertCompanyAccess(actingUser, [
+      workflow.purchaseOrder.companyId,
+    ]);
 
     if (workflow.lnSyncStatus !== 'FAILED') {
       throw new ConflictException(
@@ -302,7 +350,7 @@ export class WorkflowService {
 
     await this.lnSyncService.sendResult(workflow.workflowId);
 
-    return this.findByPurchaseOrderId(purchaseOrderId);
+    return this.fetchByPurchaseOrderId(purchaseOrderId);
   }
 
   private async finalizeWorkflow(

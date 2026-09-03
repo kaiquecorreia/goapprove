@@ -108,9 +108,16 @@ export class InMemoryUserRepository implements UserRepository {
     return Promise.resolve(this.buildUserWithRelations(userId));
   }
 
-  async findAll(): Promise<UserWithRelations[]> {
+  async findAll(companyIds?: string[]): Promise<UserWithRelations[]> {
+    const users = this.users.filter((u) => {
+      if (!companyIds) return true;
+      return this.companyUsers.some(
+        (cu) => cu.userId === u.userId && companyIds.includes(cu.companyId),
+      );
+    });
+
     return Promise.resolve(
-      this.users.map(
+      users.map(
         (u) => this.buildUserWithRelations(u.userId) as UserWithRelations,
       ),
     );

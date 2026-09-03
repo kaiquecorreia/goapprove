@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { AuthenticatedUser } from '../../../shared/types/authenticated-user';
 import { UpdateRuleDto } from '../dtos/update-rule.dto';
 import { RuleService } from '../services/rule.service';
 
@@ -7,7 +8,7 @@ import { RuleService } from '../services/rule.service';
 export class UpdateRuleUseCase {
   constructor(private readonly ruleService: RuleService) {}
 
-  execute(ruleId: string, data: UpdateRuleDto) {
-    return this.ruleService.update(ruleId, data);
+  execute(ruleId: string, data: UpdateRuleDto, actingUser: AuthenticatedUser) {
+    return this.ruleService.update(ruleId, data, actingUser);
   }
 }

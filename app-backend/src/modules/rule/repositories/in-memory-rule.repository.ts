@@ -95,10 +95,17 @@ export class InMemoryRuleRepository implements RuleRepository {
     );
   }
 
-  findAll(filter?: { companyId?: string }): Promise<RuleWithRelations[]> {
+  findAll(filter?: {
+    companyId?: string;
+    companyIds?: string[];
+  }): Promise<RuleWithRelations[]> {
     const rules = filter?.companyId
       ? this.rules.filter((rule) => rule.companyId === filter.companyId)
-      : this.rules;
+      : filter?.companyIds
+        ? this.rules.filter((rule) =>
+            filter.companyIds!.includes(rule.companyId),
+          )
+        : this.rules;
 
     return Promise.resolve([...rules].sort((a, b) => a.priority - b.priority));
   }

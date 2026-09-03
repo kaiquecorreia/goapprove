@@ -82,8 +82,9 @@ export class WorkflowController {
   findByPurchaseOrder(
     @Param('purchaseOrderId', new ParseUUIDPipe({ version: '4' }))
     purchaseOrderId: string,
+    @CurrentUser() actingUser: AuthenticatedUser,
   ) {
-    return this.getWorkflowUseCase.execute(purchaseOrderId);
+    return this.getWorkflowUseCase.execute(purchaseOrderId, actingUser);
   }
 
   @Post(':purchaseOrderId/decisions')
@@ -125,7 +126,8 @@ export class WorkflowController {
   retryLnSync(
     @Param('purchaseOrderId', new ParseUUIDPipe({ version: '4' }))
     purchaseOrderId: string,
+    @CurrentUser() actingUser: AuthenticatedUser,
   ) {
-    return this.retryLnSyncUseCase.execute(purchaseOrderId);
+    return this.retryLnSyncUseCase.execute(purchaseOrderId, actingUser);
   }
 }

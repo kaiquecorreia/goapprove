@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { AuthenticatedUser } from '../../../shared/types/authenticated-user';
 import { UpdateUserDto } from '../dtos/update-user.dto';
 import { UserService } from '../services/user.service';
 
@@ -7,7 +8,7 @@ import { UserService } from '../services/user.service';
 export class UpdateUserUseCase {
   constructor(private readonly userService: UserService) {}
 
-  execute(userId: string, data: UpdateUserDto) {
-    return this.userService.update(userId, data);
+  execute(userId: string, data: UpdateUserDto, actingUser: AuthenticatedUser) {
+    return this.userService.update(userId, data, actingUser);
   }
 }

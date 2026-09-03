@@ -107,6 +107,9 @@ export class PrismaWorkflowRepository implements WorkflowRepository {
       }),
       purchaseOrder: {
         ...(criteria.companyId && { companyId: criteria.companyId }),
+        ...(criteria.companyIds && {
+          companyId: { in: criteria.companyIds },
+        }),
         ...(criteria.supplierCode && { supplierCode: criteria.supplierCode }),
         ...(criteria.requesterCode && {
           requesterCode: criteria.requesterCode,

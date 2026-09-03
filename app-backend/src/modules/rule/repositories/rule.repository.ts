@@ -8,6 +8,7 @@ export abstract class RuleRepository {
   abstract findByCode(code: string): Promise<RuleWithRelations | null>;
   abstract findAll(filter?: {
     companyId?: string;
+    companyIds?: string[];
   }): Promise<RuleWithRelations[]>;
   abstract findActiveCandidates(
     companyId: string,

@@ -58,8 +58,14 @@ export class InMemoryCompanyRepository implements CompanyRepository {
     );
   }
 
-  findAll(): Promise<Company[]> {
-    return Promise.resolve(this.companies);
+  findAll(companyIds?: string[]): Promise<Company[]> {
+    return Promise.resolve(
+      companyIds
+        ? this.companies.filter((company) =>
+            companyIds.includes(company.companyId),
+          )
+        : this.companies,
+    );
   }
 
   update(companyId: string, data: UpdateCompanyDto): Promise<Company | null> {

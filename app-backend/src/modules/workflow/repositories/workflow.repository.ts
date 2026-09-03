@@ -60,6 +60,7 @@ export interface FindPendingWorkflowsCriteria {
   take: number;
   search?: string;
   companyId?: string;
+  companyIds?: string[];
   supplierCode?: string;
   requesterCode?: string;
   costCenter?: string;

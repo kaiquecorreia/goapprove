@@ -17,7 +17,13 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { UserRole } from '@prisma/client';
+
+import { CurrentUser } from '../../shared/decorators/current-user.decorator';
+import { Roles } from '../../shared/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
+import { RolesGuard } from '../../shared/guards/roles.guard';
+import { AuthenticatedUser } from '../../shared/types/authenticated-user';
 import { CreateCompanyDto } from './dtos/create-company.dto';
 import { UpdateCompanyDto } from './dtos/update-company.dto';
 import { CreateCompanyUseCase } from './use-cases/create-company.use-case';
@@ -26,7 +32,7 @@ import { UpdateCompanyUseCase } from './use-cases/update-company.use-case';
 
 @ApiTags('Company')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('company')
 export class CompanyController {
   constructor(
@@ -36,6 +42,7 @@ export class CompanyController {
   ) {}
 
   @Post()
+  @Roles(UserRole.ADMINISTRATOR)
   @ApiOperation({ summary: 'Create a new company' })
   @ApiBody({ type: CreateCompanyDto })
   @ApiResponse({ status: 201, description: 'Company created successfully' })
@@ -50,8 +57,8 @@ export class CompanyController {
   @Get()
   @ApiOperation({ summary: 'List all companies' })
   @ApiResponse({ status: 200, description: 'Companies listed successfully' })
-  findAll() {
-    return this.getCompanyUseCase.executeAll();
+  findAll(@CurrentUser() actingUser: AuthenticatedUser) {
+    return this.getCompanyUseCase.executeAll(actingUser);
   }
 
   @Get(':companyId')
@@ -61,8 +68,9 @@ export class CompanyController {
   @ApiResponse({ status: 404, description: 'Company not found' })
   findById(
     @Param('companyId', new ParseUUIDPipe({ version: '4' })) companyId: string,
+    @CurrentUser() actingUser: AuthenticatedUser,
   ) {
-    return this.getCompanyUseCase.executeById(companyId);
+    return this.getCompanyUseCase.executeById(companyId, actingUser);
   }
 
   @Patch(':companyId')
@@ -78,7 +86,8 @@ export class CompanyController {
   update(
     @Param('companyId', new ParseUUIDPipe({ version: '4' })) companyId: string,
     @Body() data: UpdateCompanyDto,
+    @CurrentUser() actingUser: AuthenticatedUser,
   ) {
-    return this.updateCompanyUseCase.execute(companyId, data);
+    return this.updateCompanyUseCase.execute(companyId, data, actingUser);
   }
 }

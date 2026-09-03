@@ -9,12 +9,15 @@ import { CreateCompanyDto } from '../dtos/create-company.dto';
 import { UpdateCompanyDto } from '../dtos/update-company.dto';
 import { CompanyRepository } from '../repositories/company.repository';
 import { TransactionService } from '../../../shared/prisma/transaction.service';
+import { AuthenticatedUser } from '../../../shared/types/authenticated-user';
+import { CompanyAccessService } from './company-access.service';
 
 @Injectable()
 export class CompanyService {
   constructor(
     private readonly companyRepository: CompanyRepository,
     private readonly transactionService: TransactionService,
+    private readonly companyAccessService: CompanyAccessService,
   ) {}
 
   async create(data: CreateCompanyDto) {
@@ -33,18 +36,25 @@ export class CompanyService {
     });
   }
 
-  async findById(companyId: string) {
+  async findById(companyId: string, actingUser: AuthenticatedUser) {
     const company = await this.companyRepository.findById(companyId);
 
     if (!company) {
       throw new NotFoundException(`Company with id ${companyId} not found`);
     }
 
+    await this.companyAccessService.assertCompanyAccess(actingUser, [
+      companyId,
+    ]);
+
     return company;
   }
 
-  async findAll() {
-    return this.companyRepository.findAll();
+  async findAll(actingUser: AuthenticatedUser) {
+    const accessibleCompanyIds =
+      await this.companyAccessService.getAccessibleCompanyIds(actingUser);
+
+    return this.companyRepository.findAll(accessibleCompanyIds ?? undefined);
   }
 
   async delete(companyId: string) {
@@ -61,7 +71,15 @@ export class CompanyService {
     });
   }
 
-  async update(companyId: string, data: UpdateCompanyDto) {
+  async update(
+    companyId: string,
+    data: UpdateCompanyDto,
+    actingUser: AuthenticatedUser,
+  ) {
+    await this.companyAccessService.assertCompanyAccess(actingUser, [
+      companyId,
+    ]);
+
     return this.transactionService.run(async () => {
       try {
         const company = await this.companyRepository.update(companyId, data);

@@ -23,6 +23,7 @@ export const companySchema = z.object({
   cnpj: z
     .string()
     .optional()
+    .transform((value) => value?.replace(/\D/g, ''))
     .refine((value) => !value || value.length === 14, 'CNPJ deve ter 14 dígitos'),
   status: z.boolean(),
   externalIntegrationUrlBase: z.string().optional(),

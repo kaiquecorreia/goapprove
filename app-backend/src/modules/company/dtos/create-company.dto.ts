@@ -7,6 +7,7 @@ import {
   Length,
   MaxLength,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { Environment } from '@prisma/client';
 
 export class CreateCompanyDto {
@@ -24,6 +25,9 @@ export class CreateCompanyDto {
   environment!: Environment;
 
   @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.replace(/\D/g, '') : value,
+  )
   @IsString()
   @Length(14, 14)
   cnpj?: string;

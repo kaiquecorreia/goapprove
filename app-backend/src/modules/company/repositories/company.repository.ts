@@ -9,7 +9,7 @@ export abstract class CompanyRepository {
   abstract findFirst(
     criteria: Prisma.CompanyWhereInput,
   ): Promise<Company | null>;
-  abstract findAll(): Promise<Company[]>;
+  abstract findAll(companyIds?: string[]): Promise<Company[]>;
   abstract update(
     companyId: string,
     data: UpdateCompanyDto,
