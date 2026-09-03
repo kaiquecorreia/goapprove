@@ -10,10 +10,7 @@ import { EUserRole } from '@/config/navigation';
 import styles from './styles.module.scss';
 
 export default async function EmpresasPage() {
-  const [companies, session] = await Promise.all([
-    getCompanies(),
-    requireSession(),
-  ]);
+  const [companies, session] = await Promise.all([getCompanies(), requireSession()]);
   const isAdministrator = session?.role === EUserRole.ADMINISTRATOR;
 
   return (

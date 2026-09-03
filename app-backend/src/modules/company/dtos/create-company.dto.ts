@@ -25,7 +25,7 @@ export class CreateCompanyDto {
   environment!: Environment;
 
   @IsOptional()
-  @Transform(({ value }) =>
+  @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.replace(/\D/g, '') : value,
   )
   @IsString()

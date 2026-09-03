@@ -44,7 +44,9 @@ export class CreateOnboardingDto {
 
   @ApiPropertyOptional({ minLength: 14, maxLength: 14 })
   @IsOptional()
-  @Transform(({ value }) => (typeof value === 'string' ? value.replace(/\D/g, '') : value))
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.replace(/\D/g, '') : value,
+  )
   @IsString()
   @Length(14, 14)
   cnpj?: string;
