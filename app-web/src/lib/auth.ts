@@ -68,6 +68,7 @@ export async function readInforLoginContext(): Promise<InforLoginContext | null>
 interface BackendLoginResponse {
   accessToken: string;
   userId: string;
+  name: string;
   role: EUserRole;
   email: string;
   companyId?: string;
@@ -93,6 +94,7 @@ const credentialsProvider = CredentialsProvider({
 
       return {
         id: data.userId,
+        name: data.name,
         email: data.email,
         role: data.role,
         companyId: data.companyId,
@@ -114,6 +116,7 @@ const baseCallbacks: NextAuthOptions['callbacks'] = {
     // us a ready-to-use JWT, no need to read the Infor lookup cookie at all.
     if (user?.accessToken) {
       token.accessToken = user.accessToken;
+      token.name = user.name;
       token.role = user.role;
       token.companyId = user.companyId;
       return token;
@@ -129,6 +132,7 @@ const baseCallbacks: NextAuthOptions['callbacks'] = {
     return token;
   },
   async session({ session, token }) {
+    if (token.name && session.user) session.user.name = token.name;
     if (token.accessToken) session.accessToken = token.accessToken as string;
     if (token.companyId) session.companyId = token.companyId as string;
     if (token.role) session.role = token.role as EUserRole;

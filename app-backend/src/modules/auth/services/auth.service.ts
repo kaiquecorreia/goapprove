@@ -76,6 +76,7 @@ export class AuthService {
     return {
       accessToken,
       userId: user.userId,
+      name: user.name,
       role: user.role,
       email: user.email,
       companyId: defaultCompanyUser?.companyId,

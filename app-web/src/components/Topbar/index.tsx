@@ -3,7 +3,6 @@
 import { Bell, LogOut, Search } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Avatar } from '@/components/ui/Avatar';
 import { USER_ROLE_LABELS } from '@/lib/userRoleLabels';
 import styles from './styles.module.scss';
 
@@ -31,7 +30,6 @@ export function Topbar() {
         </button>
 
         <div className={styles.user}>
-          <Avatar name={userName} size="sm" />
           <div className={styles.userInfo}>
             <span className={styles.userName}>{userName}</span>
             <span className={styles.userProfile}>{roleLabel}</span>
