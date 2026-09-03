@@ -7,8 +7,10 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiOperation,
   ApiParam,
@@ -16,6 +18,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { SetPasswordDto } from './dtos/set-password.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
@@ -25,6 +28,8 @@ import { SetUserPasswordUseCase } from './use-cases/set-user-password.use-case';
 import { UpdateUserUseCase } from './use-cases/update-user.use-case';
 
 @ApiTags('User')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('user')
 export class UserController {
   constructor(

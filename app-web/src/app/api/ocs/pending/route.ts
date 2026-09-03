@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AxiosError } from 'axios';
 
-import { requireSession, unauthorizedResponse } from '@/lib/apiAuth';
-import { resolveBackendAccessToken } from '@/lib/backendAuth';
+import { withAuthenticatedRoute } from '@/lib/apiRoute';
 import { internalApiClient } from '@/services/api';
 
 const FORWARDED_PARAMS = [
@@ -15,13 +14,7 @@ const FORWARDED_PARAMS = [
   'costCenter',
 ] as const;
 
-export async function GET(req: NextRequest) {
-  const session = await requireSession();
-
-  if (!session) {
-    return unauthorizedResponse();
-  }
-
+export const GET = withAuthenticatedRoute(async (req: NextRequest, _ctx, { token }) => {
   const params: Record<string, string> = {};
   for (const key of FORWARDED_PARAMS) {
     const value = req.nextUrl.searchParams.get(key);
@@ -29,7 +22,6 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const token = await resolveBackendAccessToken(session);
     const { data } = await internalApiClient.get('/workflows/pending', {
       params,
       headers: { Authorization: `Bearer ${token}` },
@@ -42,4 +34,4 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ message: 'Erro ao listar OCs pendentes' }, { status: 500 });
   }
-}
+});

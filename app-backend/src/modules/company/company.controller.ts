@@ -6,8 +6,10 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiOperation,
   ApiParam,
@@ -15,6 +17,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { CreateCompanyDto } from './dtos/create-company.dto';
 import { UpdateCompanyDto } from './dtos/update-company.dto';
 import { CreateCompanyUseCase } from './use-cases/create-company.use-case';
@@ -22,6 +25,8 @@ import { GetCompanyUseCase } from './use-cases/get-company.use-case';
 import { UpdateCompanyUseCase } from './use-cases/update-company.use-case';
 
 @ApiTags('Company')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('company')
 export class CompanyController {
   constructor(

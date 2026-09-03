@@ -1,31 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AxiosError } from 'axios';
 
-import { requireSession, unauthorizedResponse } from '@/lib/apiAuth';
-import { resolveBackendAccessToken } from '@/lib/backendAuth';
+import { withAuthenticatedRoute } from '@/lib/apiRoute';
 import { internalApiClient } from '@/services/api';
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await requireSession();
+export const POST = withAuthenticatedRoute<{ id: string }>(
+  async (req: NextRequest, { params }, { token }) => {
+    const { id } = await params;
+    const body = await req.json();
 
-  if (!session) {
-    return unauthorizedResponse();
-  }
+    try {
+      const { data } = await internalApiClient.post(`/workflows/${id}/decisions`, body, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return NextResponse.json(data, { status: 201 });
+    } catch (error) {
+      if (error instanceof AxiosError && error.response) {
+        return NextResponse.json(error.response.data, { status: error.response.status });
+      }
 
-  const { id } = await params;
-  const body = await req.json();
-
-  try {
-    const token = await resolveBackendAccessToken(session);
-    const { data } = await internalApiClient.post(`/workflows/${id}/decisions`, body, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return NextResponse.json(data, { status: 201 });
-  } catch (error) {
-    if (error instanceof AxiosError && error.response) {
-      return NextResponse.json(error.response.data, { status: error.response.status });
+      return NextResponse.json({ message: 'Erro ao registrar decisão' }, { status: 500 });
     }
-
-    return NextResponse.json({ message: 'Erro ao registrar decisão' }, { status: 500 });
-  }
-}
+  },
+);

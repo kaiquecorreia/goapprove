@@ -1,21 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AxiosError } from 'axios';
 
-import { requireSession, unauthorizedResponse } from '@/lib/apiAuth';
-import { resolveBackendAccessToken } from '@/lib/backendAuth';
+import { withAuthenticatedRoute } from '@/lib/apiRoute';
 import { internalApiClient } from '@/services/api';
 
-export async function GET(req: NextRequest) {
-  const session = await requireSession();
-
-  if (!session) {
-    return unauthorizedResponse();
-  }
-
+export const GET = withAuthenticatedRoute(async (req: NextRequest, _ctx, { token }) => {
   const companyId = req.nextUrl.searchParams.get('companyId') ?? undefined;
 
   try {
-    const token = await resolveBackendAccessToken(session);
     const { data } = await internalApiClient.get('/rules', {
       params: companyId ? { companyId } : undefined,
       headers: { Authorization: `Bearer ${token}` },
@@ -28,19 +20,12 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ message: 'Erro ao listar regras' }, { status: 500 });
   }
-}
+});
 
-export async function POST(req: NextRequest) {
-  const session = await requireSession();
-
-  if (!session) {
-    return unauthorizedResponse();
-  }
-
+export const POST = withAuthenticatedRoute(async (req: NextRequest, _ctx, { token }) => {
   const body = await req.json();
 
   try {
-    const token = await resolveBackendAccessToken(session);
     const { data } = await internalApiClient.post('/rules', body, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -52,4 +37,4 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ message: 'Erro ao criar regra' }, { status: 500 });
   }
-}
+});

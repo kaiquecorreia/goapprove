@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UserRole } from '@prisma/client';
 import { Request } from 'express';
 
+import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from '../types/authenticated-user';
 
 interface JwtPayload {
@@ -19,7 +20,10 @@ interface JwtPayload {
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly prismaService: PrismaService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
@@ -29,20 +33,31 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('Missing bearer token');
     }
 
+    let payload: JwtPayload;
+
     try {
-      const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
+      payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
         secret: process.env.JWT_SECRET,
       });
-
-      request.user = {
-        userId: payload.sub,
-        role: payload.role,
-        email: payload.email,
-        companyId: payload.companyId,
-      } satisfies AuthenticatedUser;
     } catch {
       throw new UnauthorizedException('Invalid or expired token');
     }
+
+    const user = await this.prismaService.getClient().user.findUnique({
+      where: { userId: payload.sub },
+      select: { userId: true, active: true, role: true, email: true },
+    });
+
+    if (!user || !user.active) {
+      throw new UnauthorizedException('User no longer exists or is inactive');
+    }
+
+    request.user = {
+      userId: user.userId,
+      role: user.role,
+      email: user.email,
+      companyId: payload.companyId,
+    } satisfies AuthenticatedUser;
 
     return true;
   }

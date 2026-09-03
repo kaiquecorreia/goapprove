@@ -1,3 +1,4 @@
 /node_modules
 /.turbo
 .pnpm-debug.log*
+.envrc

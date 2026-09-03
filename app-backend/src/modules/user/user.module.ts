@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { AppJwtModule } from '../../shared/jwt/app-jwt.module';
 import { PrismaModule } from '../../shared/prisma/prisma.module';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { PasswordModule } from '../../shared/password/password.module';
@@ -13,7 +14,7 @@ import { UpdateUserUseCase } from './use-cases/update-user.use-case';
 import { UserController } from './user.controller';
 
 @Module({
-  imports: [PrismaModule, PasswordModule],
+  imports: [PrismaModule, PasswordModule, AppJwtModule],
   controllers: [UserController],
   providers: [
     PrismaService,

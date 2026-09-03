@@ -1,6 +1,7 @@
 import { Session } from 'next-auth';
 
 import { internalApiClient } from '@/services/api';
+import { requireSession } from './apiAuth';
 
 interface BackendTokenResponse {
   accessToken: string;
@@ -34,4 +35,18 @@ export async function resolveBackendAccessToken(session: Session): Promise<strin
   }
 
   throw new Error('Sessão sem credenciais de backend válidas');
+}
+
+// For server components/services (not Route Handlers) that need the backend
+// token directly. These run on pages already gated by middleware.ts, so a
+// failure here is exceptional and should surface as an error, not silently
+// degrade (e.g. an empty list) — see services/rules.ts, users.ts, companies.ts.
+export async function getAuthenticatedBackendToken(): Promise<string> {
+  const session = await requireSession();
+
+  if (!session) {
+    throw new Error('Sessão não encontrada');
+  }
+
+  return resolveBackendAccessToken(session);
 }

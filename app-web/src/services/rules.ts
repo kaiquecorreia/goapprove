@@ -1,7 +1,4 @@
-import { getServerSession } from 'next-auth/next';
-
-import { baseAuthOptions } from '@/lib/auth';
-import { getBackendAccessToken } from '@/lib/backendAuth';
+import { getAuthenticatedBackendToken } from '@/lib/backendAuth';
 import type { ConflictStrategy, Rule, RuleOperator } from '@/lib/mock/types';
 import { internalApiClient } from './api';
 
@@ -74,22 +71,8 @@ function toFrontendRule(rule: BackendRule): Rule {
   };
 }
 
-async function getAuthorizedToken(): Promise<string | null> {
-  const session = await getServerSession(baseAuthOptions);
-
-  if (!session?.externalIntegrationUser) {
-    return null;
-  }
-
-  return getBackendAccessToken(session.externalIntegrationUser);
-}
-
 export async function getRules(companyId?: string): Promise<Rule[]> {
-  const token = await getAuthorizedToken();
-
-  if (!token) {
-    return [];
-  }
+  const token = await getAuthenticatedBackendToken();
 
   const { data } = await internalApiClient.get<BackendRule[]>('/rules', {
     params: companyId ? { companyId } : undefined,

@@ -1,3 +1,4 @@
+import { getAuthenticatedBackendToken } from '@/lib/backendAuth';
 import { internalApiClient } from './api';
 import type { User } from '@/lib/mock/types';
 
@@ -5,7 +6,10 @@ import type { User } from '@/lib/mock/types';
 type RawUser = Omit<User, 'approvalLimit'> & { approvalLimit: string | number | null };
 
 export async function getUsers(): Promise<User[]> {
-  const { data } = await internalApiClient.get<RawUser[]>('/user');
+  const token = await getAuthenticatedBackendToken();
+  const { data } = await internalApiClient.get<RawUser[]>('/user', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return data.map((user) => ({
     ...user,
     approvalLimit: user.approvalLimit === null ? null : Number(user.approvalLimit),
