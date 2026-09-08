@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 
 import { CompanyModule } from './modules/company/company.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { HealthModule } from './modules/health/health.module';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -21,6 +22,7 @@ import { InternalApiKeyGuard } from './shared/guards/internal-api-key.guard';
     RuleModule,
     WorkflowModule,
     PurchaseOrderModule,
+    DashboardModule,
   ],
   controllers: [],
   providers: [{ provide: APP_GUARD, useClass: InternalApiKeyGuard }],

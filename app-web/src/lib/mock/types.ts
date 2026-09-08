@@ -221,3 +221,26 @@ export interface CompanyDistributionEntry {
   name: string;
   value: number;
 }
+
+export interface DashboardKpis {
+  pending: number;
+  approved: number;
+  rejected: number;
+  cancelled: number;
+  noRule: number;
+  error: number;
+  totalCount: number;
+  totalAmount: number;
+}
+
+// The subset of a purchase order the "Atividade recente" list renders. Kept
+// narrow on purpose: the endpoint behind it only selects these columns.
+export interface RecentActivityItem {
+  id: string;
+  number: string;
+  supplier: string;
+  requester: string;
+  total: number;
+  status: OCStatus;
+  finalizedAt: string;
+}

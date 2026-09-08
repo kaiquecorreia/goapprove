@@ -28,3 +28,24 @@ export type WorkflowWithRelations = ApprovalWorkflow & {
   };
   rule: { name: string; code: string } | null;
 };
+
+// Lightweight shape for paginated list endpoints (findPending/findHistory) —
+// callers only ever read scalar purchaseOrder fields and levels.length, so
+// approvers/decisions/auditEvents/lines/rule are deliberately left out to
+// avoid over-fetching on every page load.
+export type WorkflowListItem = Pick<ApprovalWorkflow, 'currentLevel'> & {
+  levels: { levelId: string }[];
+  purchaseOrder: Pick<
+    PurchaseOrder,
+    | 'purchaseOrderId'
+    | 'orderNumber'
+    | 'supplierName'
+    | 'requesterName'
+    | 'totalAmount'
+    | 'costCenter'
+    | 'status'
+    | 'erpCreatedAt'
+  > & {
+    company: Pick<Company, 'name'>;
+  };
+};

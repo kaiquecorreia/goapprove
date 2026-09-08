@@ -12,6 +12,16 @@ GET {{baseUrl}}/workflows/pending?page=1&limit=20&search=4500012345&companyId=RE
 x-internal-api-key: {{apiKey}}
 Authorization: Bearer {{token}}
 
+### List purchase order history (OWNER/ADMINISTRATOR/VIEWER: company-wide, every status)
+GET {{baseUrl}}/workflows/history
+x-internal-api-key: {{apiKey}}
+Authorization: Bearer {{token}}
+
+### List purchase order history, paginated and filtered
+GET {{baseUrl}}/workflows/history?page=1&limit=20&search=4500012345&status=APPROVED&companyId=REPLACE_WITH_COMPANY_ID&dateFrom=2026-01-01&dateTo=2026-01-31
+x-internal-api-key: {{apiKey}}
+Authorization: Bearer {{token}}
+
 ### Get the workflow for a purchase order
 GET {{baseUrl}}/workflows/REPLACE_WITH_PURCHASE_ORDER_ID
 x-internal-api-key: {{apiKey}}

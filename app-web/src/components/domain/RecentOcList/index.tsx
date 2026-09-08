@@ -2,10 +2,10 @@ import Link from 'next/link';
 import { Avatar } from '@/components/ui/Avatar';
 import { StatusBadge } from '@/components/domain/StatusBadge';
 import { formatCurrency } from '@/lib/format/currency';
-import type { PurchaseOrder } from '@/lib/mock/types';
+import type { RecentActivityItem } from '@/lib/mock/types';
 import styles from './styles.module.scss';
 
-export function RecentOcList({ orders }: { orders: PurchaseOrder[] }) {
+export function RecentOcList({ orders }: { orders: RecentActivityItem[] }) {
   return (
     <div className={styles.list}>
       {orders.map((order) => (

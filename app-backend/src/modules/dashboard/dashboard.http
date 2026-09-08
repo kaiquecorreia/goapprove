@@ -1,0 +1,33 @@
+@baseUrl = http://localhost:3012
+@apiKey = d4ad57c970c464a0de00b5b362a3a1164a7657110082f2b9ac28f4f551cdb360
+@token = REPLACE_WITH_ACCESS_TOKEN_FROM_AUTH_CALLBACK
+
+### KPIs — counts per status + summed amount (defaults to the last 6 months)
+GET {{baseUrl}}/dashboard/kpis
+x-internal-api-key: {{apiKey}}
+Authorization: Bearer {{token}}
+
+### KPIs, scoped to one company and an explicit period
+GET {{baseUrl}}/dashboard/kpis?companyId=REPLACE_WITH_COMPANY_ID&dateFrom=2026-01-01&dateTo=2026-01-31
+x-internal-api-key: {{apiKey}}
+Authorization: Bearer {{token}}
+
+### Monthly trend — approved / rejected / no-rule per month, empty months included
+GET {{baseUrl}}/dashboard/monthly-trend?months=6
+x-internal-api-key: {{apiKey}}
+Authorization: Bearer {{token}}
+
+### Company distribution — top 3 companies + an aggregated "Outras" entry
+GET {{baseUrl}}/dashboard/company-distribution?limit=4
+x-internal-api-key: {{apiKey}}
+Authorization: Bearer {{token}}
+
+### Recent activity — most recently approved/rejected purchase orders
+GET {{baseUrl}}/dashboard/recent-activity?limit=6
+x-internal-api-key: {{apiKey}}
+Authorization: Bearer {{token}}
+
+### Tenant isolation check — an OWNER asking for a company it is not a member of must get 403
+GET {{baseUrl}}/dashboard/kpis?companyId=REPLACE_WITH_FOREIGN_COMPANY_ID
+x-internal-api-key: {{apiKey}}
+Authorization: Bearer {{token}}

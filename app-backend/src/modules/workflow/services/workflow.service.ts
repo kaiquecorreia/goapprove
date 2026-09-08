@@ -13,8 +13,10 @@ import { TransactionService } from '../../../shared/prisma/transaction.service';
 import { AuthenticatedUser } from '../../../shared/types/authenticated-user';
 import { MatchedRuleResult } from '../../rule/types/matched-rule-result';
 import { ListPendingWorkflowsDto } from '../dtos/list-pending-workflows.dto';
+import { ListWorkflowsHistoryDto } from '../dtos/list-workflows-history.dto';
 import {
   FindPendingWorkflowsResult,
+  FindWorkflowsHistoryResult,
   WorkflowRepository,
 } from '../repositories/workflow.repository';
 import { RecordDecisionInput } from '../types/record-decision-input';
@@ -186,6 +188,51 @@ export class WorkflowService {
 
       result = await this.workflowRepository.findPending({
         userIds: [user.userId, ...substitutedForIds],
+        skip: (page - 1) * limit,
+        take: limit,
+        ...filters,
+      });
+    }
+
+    return { ...result, page, limit };
+  }
+
+  async findHistory(
+    user: AuthenticatedUser,
+    query: ListWorkflowsHistoryDto,
+  ): Promise<FindWorkflowsHistoryResult & { page: number; limit: number }> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const filters = {
+      search: query.search,
+      status: query.status,
+      supplierCode: query.supplierCode,
+      requesterCode: query.requesterCode,
+      costCenter: query.costCenter,
+      dateFrom: query.dateFrom ? new Date(query.dateFrom) : undefined,
+      dateTo: query.dateTo ? new Date(query.dateTo) : undefined,
+    };
+
+    const accessibleCompanyIds =
+      await this.companyAccessService.getAccessibleCompanyIds(user);
+
+    let result: FindWorkflowsHistoryResult;
+
+    if (accessibleCompanyIds === null) {
+      // ADMINISTRATOR — unrestricted.
+      result = await this.workflowRepository.findHistory({
+        companyId: query.companyId,
+        skip: (page - 1) * limit,
+        take: limit,
+        ...filters,
+      });
+    } else {
+      if (query.companyId && !accessibleCompanyIds.includes(query.companyId)) {
+        throw new ForbiddenException('You do not have access to this resource');
+      }
+
+      result = await this.workflowRepository.findHistory({
+        companyIds: query.companyId ? [query.companyId] : accessibleCompanyIds,
         skip: (page - 1) * limit,
         take: limit,
         ...filters,

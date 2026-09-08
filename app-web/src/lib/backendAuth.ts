@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { Session } from 'next-auth';
 
 import { internalApiClient } from '@/services/api';
@@ -11,13 +12,19 @@ interface BackendTokenResponse {
 // the shared internal-api-key already attached by internalApiClient). The BFF
 // mints one here from the session's externalIntegrationUser before proxying
 // the request, so the backend can identify who is acting.
-export async function getBackendAccessToken(externalIntegrationUser: string): Promise<string> {
-  const { data } = await internalApiClient.post<BackendTokenResponse>('/auth/callback', {
-    externalIntegrationUser,
-  });
+//
+// Wrapped in React's cache() so concurrent callers within the same request
+// (e.g. a page firing off several Promise.all'd service calls) share one
+// /auth/callback round trip instead of each minting their own token.
+export const getBackendAccessToken = cache(
+  async (externalIntegrationUser: string): Promise<string> => {
+    const { data } = await internalApiClient.post<BackendTokenResponse>('/auth/callback', {
+      externalIntegrationUser,
+    });
 
-  return data.accessToken;
-}
+    return data.accessToken;
+  },
+);
 
 // Infor sessions have `externalIntegrationUser` set and their `accessToken`
 // (if any) is the *Infor* OAuth token, not ours — always double-hop through

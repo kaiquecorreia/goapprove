@@ -15,6 +15,7 @@ import { LnSyncService } from './services/ln-sync.service';
 import { WorkflowService } from './services/workflow.service';
 import { GetPendingApprovalsUseCase } from './use-cases/get-pending-approvals.use-case';
 import { GetWorkflowUseCase } from './use-cases/get-workflow.use-case';
+import { GetWorkflowsHistoryUseCase } from './use-cases/get-workflows-history.use-case';
 import { RecordDecisionUseCase } from './use-cases/record-decision.use-case';
 import { RetryLnSyncUseCase } from './use-cases/retry-ln-sync.use-case';
 import { WorkflowController } from './workflow.controller';
@@ -37,6 +38,7 @@ import { WorkflowController } from './workflow.controller';
     LnApiClient,
     GetPendingApprovalsUseCase,
     GetWorkflowUseCase,
+    GetWorkflowsHistoryUseCase,
     RecordDecisionUseCase,
     RetryLnSyncUseCase,
     { provide: WorkflowRepository, useClass: PrismaWorkflowRepository },

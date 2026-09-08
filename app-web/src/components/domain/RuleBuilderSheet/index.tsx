@@ -73,8 +73,8 @@ export function RuleBuilderSheet({ trigger, companies, users }: RuleBuilderSheet
         : undefined,
     }));
 
-    await feedback.promise(
-      createRule({
+    try {
+      await createRule({
         code: data.code,
         name: data.name,
         description: data.description || undefined,
@@ -89,16 +89,14 @@ export function RuleBuilderSheet({ trigger, companies, users }: RuleBuilderSheet
           mode: level.mode,
           approverUserIds: level.approverUserIds,
         })),
-      }),
-      {
-        loading: 'Criando regra...',
-        success: `Regra "${data.name}" criada com sucesso!`,
-        error: (err: Error) => err.message || 'Falha ao criar regra.',
-      },
-    );
+      });
 
-    reset();
-    router.refresh();
+      feedback.success(`Regra "${data.name}" criada com sucesso!`);
+      reset();
+      router.refresh();
+    } catch (err) {
+      feedback.error(err instanceof Error ? err.message : 'Falha ao criar regra.');
+    }
   };
 
   return (

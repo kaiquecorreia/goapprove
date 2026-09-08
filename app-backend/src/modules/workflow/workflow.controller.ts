@@ -25,9 +25,11 @@ import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { AuthenticatedUser } from '../../shared/types/authenticated-user';
 import { ListPendingWorkflowsDto } from './dtos/list-pending-workflows.dto';
+import { ListWorkflowsHistoryDto } from './dtos/list-workflows-history.dto';
 import { RecordDecisionDto } from './dtos/record-decision.dto';
 import { GetPendingApprovalsUseCase } from './use-cases/get-pending-approvals.use-case';
 import { GetWorkflowUseCase } from './use-cases/get-workflow.use-case';
+import { GetWorkflowsHistoryUseCase } from './use-cases/get-workflows-history.use-case';
 import { RecordDecisionUseCase } from './use-cases/record-decision.use-case';
 import { RetryLnSyncUseCase } from './use-cases/retry-ln-sync.use-case';
 
@@ -38,6 +40,7 @@ import { RetryLnSyncUseCase } from './use-cases/retry-ln-sync.use-case';
 export class WorkflowController {
   constructor(
     private readonly getPendingApprovalsUseCase: GetPendingApprovalsUseCase,
+    private readonly getWorkflowsHistoryUseCase: GetWorkflowsHistoryUseCase,
     private readonly getWorkflowUseCase: GetWorkflowUseCase,
     private readonly recordDecisionUseCase: RecordDecisionUseCase,
     private readonly retryLnSyncUseCase: RetryLnSyncUseCase,
@@ -67,6 +70,35 @@ export class WorkflowController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.getPendingApprovalsUseCase.execute(user, query);
+  }
+
+  @Get('history')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.OWNER, UserRole.ADMINISTRATOR, UserRole.VIEWER)
+  @ApiOperation({
+    summary:
+      'List the full purchase order history (every status), company-wide',
+  })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Purchase order number',
+  })
+  @ApiQuery({ name: 'status', required: false })
+  @ApiQuery({ name: 'companyId', required: false, format: 'uuid' })
+  @ApiQuery({ name: 'supplierCode', required: false })
+  @ApiQuery({ name: 'requesterCode', required: false })
+  @ApiQuery({ name: 'costCenter', required: false })
+  @ApiQuery({ name: 'dateFrom', required: false })
+  @ApiQuery({ name: 'dateTo', required: false })
+  @ApiResponse({ status: 200, description: 'Workflow history listed' })
+  findHistory(
+    @Query() query: ListWorkflowsHistoryDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.getWorkflowsHistoryUseCase.execute(user, query);
   }
 
   @Get(':purchaseOrderId')

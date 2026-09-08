@@ -83,6 +83,7 @@ model CompanyUser {
   user      User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
   @@id([companyId, userId])
+  @@index([userId])
   @@map("companies_users")
 }
 
@@ -137,6 +138,8 @@ model PurchaseOrder {
   workflow         ApprovalWorkflow?
 
   @@index([companyId, orderNumber])
+  @@index([companyId, erpCreatedAt])
+  @@index([companyId, status, erpCreatedAt])
   @@map("purchase_orders")
 }
 
@@ -347,6 +350,8 @@ model ApprovalWorkflow {
   levels        ApprovalWorkflowLevel[]
   auditEvents   WorkflowAuditEvent[]
 
+  @@index([status])
+  @@index([status, finalizedAt])
   @@map("approval_workflows")
 }
 
@@ -365,6 +370,7 @@ model ApprovalWorkflowLevel {
   decisions ApprovalDecision[]
 
   @@unique([workflowId, level])
+  @@index([workflowId, status])
   @@map("approval_workflow_levels")
 }
 
@@ -380,6 +386,7 @@ model ApprovalWorkflowApprover {
 
   @@id([levelId, userId])
   @@unique([levelId, sequenceOrder])
+  @@index([userId, status])
   @@map("approval_workflow_approvers")
 }
 

@@ -1,15 +1,20 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Search } from 'lucide-react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { Pagination } from '@/components/ui/Pagination';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { OcTable } from '@/components/domain/OcTable';
-import { getPurchaseOrders } from '@/services/purchaseOrders';
-import type { OCStatus } from '@/lib/mock/types';
+import { getHistoryPurchaseOrders } from '@/services/historyClient';
+import { feedback } from '@/services/feedback';
+import type { OCStatus, PendingPurchaseOrdersPage } from '@/lib/mock/types';
 import styles from './styles.module.scss';
+
+const PAGE_SIZE = 20;
+const DEBOUNCE_MS = 300;
 
 const STATUS_TABS: { value: OCStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'Todas' },
@@ -21,19 +26,53 @@ const STATUS_TABS: { value: OCStatus | 'all'; label: string }[] = [
   { value: 'error', label: 'Erro' },
 ];
 
+const EMPTY_PAGE: PendingPurchaseOrdersPage = { items: [], total: 0, page: 1, limit: PAGE_SIZE };
+
 export default function HistoricoPage() {
-  const orders = getPurchaseOrders();
   const [search, setSearch] = useState('');
   const [date, setDate] = useState('');
+  const [status, setStatus] = useState<OCStatus | 'all'>('all');
+  const [page, setPage] = useState(1);
+  const [data, setData] = useState<PendingPurchaseOrdersPage>(EMPTY_PAGE);
+  const [loading, setLoading] = useState(true);
+  const requestIdRef = useRef(0);
 
-  const filteredOrders = useMemo(() => {
-    return orders.filter((order) => {
-      const haystack = `${order.number} ${order.supplier} ${order.requester}`.toLowerCase();
-      const matchesSearch = haystack.includes(search.toLowerCase());
-      const matchesDate = !date || order.receivedAt.startsWith(date);
-      return matchesSearch && matchesDate;
-    });
-  }, [orders, search, date]);
+  useEffect(() => {
+    setPage(1);
+  }, [search, date, status]);
+
+  const fetchHistory = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
+    setLoading(true);
+
+    try {
+      const result = await getHistoryPurchaseOrders({
+        page,
+        limit: PAGE_SIZE,
+        search: search || undefined,
+        status: status === 'all' ? undefined : status,
+        dateFrom: date ? `${date}T00:00:00.000Z` : undefined,
+        dateTo: date ? `${date}T23:59:59.999Z` : undefined,
+      });
+      if (requestIdRef.current === requestId) setData(result);
+    } catch (error) {
+      if (requestIdRef.current === requestId) {
+        feedback.error(
+          error instanceof Error ? error.message : 'Erro ao carregar histórico de OCs',
+        );
+      }
+    } finally {
+      if (requestIdRef.current === requestId) setLoading(false);
+    }
+  }, [search, date, status, page]);
+
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      fetchHistory();
+    }, DEBOUNCE_MS);
+
+    return () => clearTimeout(handle);
+  }, [fetchHistory]);
 
   return (
     <div className={styles.page}>
@@ -57,7 +96,7 @@ export default function HistoricoPage() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="all">
+      <Tabs value={status} onValueChange={(value) => setStatus(value as OCStatus | 'all')}>
         <TabsList>
           {STATUS_TABS.map((tab) => (
             <TabsTrigger key={tab.value} value={tab.value}>
@@ -65,23 +104,27 @@ export default function HistoricoPage() {
             </TabsTrigger>
           ))}
         </TabsList>
-
-        {STATUS_TABS.map((tab) => (
-          <TabsContent key={tab.value} value={tab.value}>
-            <Card>
-              <CardContent>
-                <OcTable
-                  orders={
-                    tab.value === 'all'
-                      ? filteredOrders
-                      : filteredOrders.filter((order) => order.status === tab.value)
-                  }
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        ))}
       </Tabs>
+
+      <Card>
+        <CardContent>
+          {loading ? (
+            <p className={styles.stateMessage}>Carregando histórico…</p>
+          ) : data.items.length === 0 ? (
+            <p className={styles.stateMessage}>Nenhuma OC encontrada.</p>
+          ) : (
+            <>
+              <OcTable orders={data.items} />
+              <Pagination
+                page={data.page}
+                limit={data.limit}
+                total={data.total}
+                onPageChange={setPage}
+              />
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

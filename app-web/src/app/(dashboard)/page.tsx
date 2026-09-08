@@ -1,64 +1,74 @@
-'use client';
-
-import { useMemo } from 'react';
 import { AlertTriangle, CheckCircle2, Clock, XCircle } from 'lucide-react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { KpiCard } from '@/components/domain/KpiCard';
+import { DashboardFiltersBar } from '@/components/domain/DashboardFiltersBar';
 import { MonthlyStatusChart } from '@/components/domain/MonthlyStatusChart';
 import { CompanyDistributionChart } from '@/components/domain/CompanyDistributionChart';
 import { RecentOcList } from '@/components/domain/RecentOcList';
-import { getPurchaseOrders } from '@/services/purchaseOrders';
-import { monthlyStats, companyDistribution } from '@/lib/mock/dashboardStats';
+import { getCompanies } from '@/services/companies';
+import {
+  getCompanyDistribution,
+  getDashboardKpis,
+  getMonthlyTrend,
+  getRecentActivity,
+} from '@/services/dashboard';
+import { parsePeriod, resolvePeriod } from '@/lib/dashboardPeriod';
 import { formatCurrency } from '@/lib/format/currency';
 import styles from './styles.module.scss';
 
-export default function DashboardPage() {
-  const orders = getPurchaseOrders();
+interface HomePageProps {
+  searchParams: Promise<{ period?: string; companyId?: string }>;
+}
 
-  const stats = useMemo(() => {
-    const pending = orders.filter((order) => order.status === 'pending');
-    const approved = orders.filter((order) => order.status === 'approved');
-    const rejected = orders.filter((order) => order.status === 'rejected');
-    const totalValue = orders.reduce((sum, order) => sum + order.total, 0);
+export default async function HomePage({ searchParams }: HomePageProps) {
+  const { period: rawPeriod, companyId } = await searchParams;
+  const period = parsePeriod(rawPeriod);
+  const { dateFrom, dateTo, months } = resolvePeriod(period);
+  const query = { dateFrom, dateTo, companyId };
 
-    return { pending, approved, rejected, totalValue };
-  }, [orders]);
-
-  const recentOrders = useMemo(
-    () =>
-      [...stats.approved, ...stats.rejected]
-        .sort((a, b) => (a.receivedAt < b.receivedAt ? 1 : -1))
-        .slice(0, 6),
-    [stats],
-  );
+  // All five calls share a single /auth/callback round trip: getBackendAccessToken
+  // is wrapped in React's cache() (see lib/backendAuth.ts).
+  const [kpis, monthlyStats, companyDistribution, recentOrders, companies] = await Promise.all([
+    getDashboardKpis(query),
+    getMonthlyTrend({ ...query, months }),
+    getCompanyDistribution(query),
+    getRecentActivity(query),
+    getCompanies(),
+  ]);
 
   return (
     <div className={styles.page}>
-      <PageHeader title="Dashboard" description="Visão geral do fluxo de aprovação de OCs." />
+      <PageHeader
+        title="Dashboard"
+        description="Visão geral do fluxo de aprovação de OCs."
+        actions={
+          <DashboardFiltersBar period={period} companyId={companyId} companies={companies} />
+        }
+      />
 
       <div className={styles.kpiGrid}>
         <KpiCard
           title="Pendentes"
-          value={String(stats.pending.length)}
+          value={String(kpis.pending)}
           icon={<Clock size={20} />}
           tone="warning"
         />
         <KpiCard
           title="Aprovadas"
-          value={String(stats.approved.length)}
+          value={String(kpis.approved)}
           icon={<CheckCircle2 size={20} />}
           tone="success"
         />
         <KpiCard
           title="Rejeitadas"
-          value={String(stats.rejected.length)}
+          value={String(kpis.rejected)}
           icon={<XCircle size={20} />}
           tone="destructive"
         />
         <KpiCard
           title="Valor total"
-          value={formatCurrency(stats.totalValue)}
+          value={formatCurrency(kpis.totalAmount)}
           icon={<AlertTriangle size={20} />}
           tone="primary"
         />
@@ -79,7 +89,11 @@ export default function DashboardPage() {
             <CardTitle>Distribuição por empresa</CardTitle>
           </CardHeader>
           <CardContent>
-            <CompanyDistributionChart data={companyDistribution} />
+            {companyDistribution.length > 0 ? (
+              <CompanyDistributionChart data={companyDistribution} />
+            ) : (
+              <p className={styles.stateMessage}>Nenhuma OC no período.</p>
+            )}
           </CardContent>
         </Card>
       </div>

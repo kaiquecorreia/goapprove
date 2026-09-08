@@ -8,7 +8,10 @@ import {
   WorkflowStatus,
 } from '@prisma/client';
 
-import { WorkflowWithRelations } from '../types/workflow-with-relations';
+import {
+  WorkflowListItem,
+  WorkflowWithRelations,
+} from '../types/workflow-with-relations';
 
 export interface CreateWorkflowLevelInput {
   levelNumber: number;
@@ -67,7 +70,27 @@ export interface FindPendingWorkflowsCriteria {
 }
 
 export interface FindPendingWorkflowsResult {
-  items: WorkflowWithRelations[];
+  items: WorkflowListItem[];
+  total: number;
+}
+
+export interface FindWorkflowsHistoryCriteria {
+  // Omitted => no company restriction (ADMINISTRATOR, unrestricted).
+  companyId?: string;
+  companyIds?: string[];
+  skip: number;
+  take: number;
+  search?: string;
+  status?: PurchaseOrderStatus;
+  supplierCode?: string;
+  requesterCode?: string;
+  costCenter?: string;
+  dateFrom?: Date;
+  dateTo?: Date;
+}
+
+export interface FindWorkflowsHistoryResult {
+  items: WorkflowListItem[];
   total: number;
 }
 
@@ -80,6 +103,9 @@ export abstract class WorkflowRepository {
   abstract findPending(
     criteria: FindPendingWorkflowsCriteria,
   ): Promise<FindPendingWorkflowsResult>;
+  abstract findHistory(
+    criteria: FindWorkflowsHistoryCriteria,
+  ): Promise<FindWorkflowsHistoryResult>;
 
   abstract createDecision(
     input: CreateDecisionInput,

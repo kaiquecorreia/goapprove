@@ -14,6 +14,8 @@ import {
   CreateWorkflowInput,
   FindPendingWorkflowsCriteria,
   FindPendingWorkflowsResult,
+  FindWorkflowsHistoryCriteria,
+  FindWorkflowsHistoryResult,
   UpdateWorkflowInput,
   WorkflowRepository,
 } from './workflow.repository';
@@ -31,6 +33,27 @@ const WORKFLOW_INCLUDE = {
   auditEvents: { orderBy: { createdAt: 'asc' } },
   purchaseOrder: { include: { company: true, lines: true } },
   rule: { select: { name: true, code: true } },
+} satisfies Prisma.ApprovalWorkflowInclude;
+
+// Used by findPending/findHistory: those return paginated summaries, not the
+// full workflow detail, so only the fields actually read by the frontend
+// mappers (toPendingPurchaseOrder/toHistoryPurchaseOrder) are fetched —
+// approvers, decisions, auditEvents, PO lines and rule are left out on purpose.
+const WORKFLOW_LIST_INCLUDE = {
+  levels: { select: { levelId: true } },
+  purchaseOrder: {
+    select: {
+      purchaseOrderId: true,
+      orderNumber: true,
+      supplierName: true,
+      requesterName: true,
+      totalAmount: true,
+      costCenter: true,
+      status: true,
+      erpCreatedAt: true,
+      company: { select: { name: true } },
+    },
+  },
 } satisfies Prisma.ApprovalWorkflowInclude;
 
 @Injectable()
@@ -126,10 +149,53 @@ export class PrismaWorkflowRepository implements WorkflowRepository {
     const [items, total] = await Promise.all([
       client.approvalWorkflow.findMany({
         where,
-        include: WORKFLOW_INCLUDE,
+        include: WORKFLOW_LIST_INCLUDE,
         skip: criteria.skip,
         take: criteria.take,
         orderBy: { purchaseOrder: { erpCreatedAt: 'asc' } },
+      }),
+      client.approvalWorkflow.count({ where }),
+    ]);
+
+    return { items, total };
+  }
+
+  async findHistory(
+    criteria: FindWorkflowsHistoryCriteria,
+  ): Promise<FindWorkflowsHistoryResult> {
+    const where: Prisma.ApprovalWorkflowWhereInput = {
+      purchaseOrder: {
+        ...(criteria.companyId && { companyId: criteria.companyId }),
+        ...(criteria.companyIds && {
+          companyId: { in: criteria.companyIds },
+        }),
+        ...(criteria.status && { status: criteria.status }),
+        ...(criteria.supplierCode && { supplierCode: criteria.supplierCode }),
+        ...(criteria.requesterCode && {
+          requesterCode: criteria.requesterCode,
+        }),
+        ...(criteria.costCenter && { costCenter: criteria.costCenter }),
+        ...(criteria.search && {
+          orderNumber: { contains: criteria.search, mode: 'insensitive' },
+        }),
+        ...((criteria.dateFrom || criteria.dateTo) && {
+          erpCreatedAt: {
+            ...(criteria.dateFrom && { gte: criteria.dateFrom }),
+            ...(criteria.dateTo && { lte: criteria.dateTo }),
+          },
+        }),
+      },
+    };
+
+    const client = this.prismaService.getClient();
+
+    const [items, total] = await Promise.all([
+      client.approvalWorkflow.findMany({
+        where,
+        include: WORKFLOW_LIST_INCLUDE,
+        skip: criteria.skip,
+        take: criteria.take,
+        orderBy: { purchaseOrder: { erpCreatedAt: 'desc' } },
       }),
       client.approvalWorkflow.count({ where }),
     ]);

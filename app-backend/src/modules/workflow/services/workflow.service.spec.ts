@@ -75,6 +75,7 @@ describe('WorkflowService', () => {
       findByPurchaseOrderId: jest.fn(),
       findById: jest.fn(),
       findPending: jest.fn(),
+      findHistory: jest.fn(),
       createDecision: jest.fn(),
       updateApproverStatus: jest.fn(),
       updateLevelStatus: jest.fn(),
