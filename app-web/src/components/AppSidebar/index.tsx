@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { EUserRole, navigationGroups } from '@/config/navigation';
-import { getPurchaseOrders } from '@/services/purchaseOrders';
 import { cx } from '@/lib/cx';
 import Logo from '@/components/Logo';
 import styles from './styles.module.scss';
@@ -19,7 +18,6 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const role = session?.role as EUserRole | undefined;
-  const pendingCount = getPurchaseOrders().filter((order) => order.status === 'pending').length;
 
   const visibleGroups = navigationGroups
     .map((group) => ({
@@ -49,7 +47,6 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
             <ul className={styles.items}>
               {group.items.map((item) => {
                 const isActive = pathname === item.href;
-                const badge = item.href === '/ocs/pending' ? pendingCount : undefined;
                 const Icon = item.icon;
 
                 return (
@@ -61,7 +58,6 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
                     >
                       <Icon size={18} />
                       {!collapsed && <span className={styles.linkLabel}>{item.name}</span>}
-                      {!collapsed && badge ? <span className={styles.badge}>{badge}</span> : null}
                     </Link>
                   </li>
                 );
