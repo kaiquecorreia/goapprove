@@ -16,4 +16,22 @@ export class TransactionService {
     }
     return this.prismaService.runInTransaction(fn);
   }
+
+  isActive(): boolean {
+    return this.clsService.prismaTransaction.getStore() !== undefined;
+  }
+
+  // Runs after the outermost transaction commits, or immediately when there is
+  // no transaction. Since run() is reentrant, nested calls queue onto the
+  // outermost transaction's hook list, which is what callers expect.
+  onCommit(callback: () => void): void {
+    const hooks = this.clsService.transactionHooks.getStore();
+
+    if (hooks) {
+      hooks.push(callback);
+      return;
+    }
+
+    callback();
+  }
 }

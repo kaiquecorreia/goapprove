@@ -5,11 +5,17 @@ import { ClsService } from './cls.service';
 describe('TransactionService', () => {
   let service: TransactionService;
   let prismaService: { runInTransaction: jest.Mock };
-  let clsService: { prismaTransaction: { getStore: jest.Mock } };
+  let clsService: {
+    prismaTransaction: { getStore: jest.Mock };
+    transactionHooks: { getStore: jest.Mock };
+  };
 
   beforeEach(() => {
     prismaService = { runInTransaction: jest.fn() };
-    clsService = { prismaTransaction: { getStore: jest.fn() } };
+    clsService = {
+      prismaTransaction: { getStore: jest.fn() },
+      transactionHooks: { getStore: jest.fn() },
+    };
     service = new TransactionService(
       prismaService as unknown as PrismaService,
       clsService as unknown as ClsService,
@@ -46,5 +52,37 @@ describe('TransactionService', () => {
     const fn = jest.fn().mockResolvedValue(expected);
     const result = await service.run(fn);
     expect(result).toBe(expected);
+  });
+
+  describe('isActive()', () => {
+    it('reflete a presença de uma transação no contexto', () => {
+      clsService.prismaTransaction.getStore.mockReturnValue(undefined);
+      expect(service.isActive()).toBe(false);
+
+      clsService.prismaTransaction.getStore.mockReturnValue({ tx: true });
+      expect(service.isActive()).toBe(true);
+    });
+  });
+
+  describe('onCommit()', () => {
+    it('enfileira o callback quando há transação em andamento', () => {
+      const hooks: Array<() => void> = [];
+      clsService.transactionHooks.getStore.mockReturnValue(hooks);
+
+      const callback = jest.fn();
+      service.onCommit(callback);
+
+      expect(callback).not.toHaveBeenCalled();
+      expect(hooks).toEqual([callback]);
+    });
+
+    it('executa o callback imediatamente fora de transação', () => {
+      clsService.transactionHooks.getStore.mockReturnValue(undefined);
+
+      const callback = jest.fn();
+      service.onCommit(callback);
+
+      expect(callback).toHaveBeenCalledTimes(1);
+    });
   });
 });

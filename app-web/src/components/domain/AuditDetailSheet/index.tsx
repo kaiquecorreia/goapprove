@@ -55,6 +55,16 @@ export function AuditDetailSheet({ event, onOpenChange }: AuditDetailSheetProps)
               </div>
             </div>
 
+            {event.metadata && Object.keys(event.metadata).length > 0 && (
+              <>
+                <Separator className={styles.separator} />
+                <div className={styles.field}>
+                  <span className={styles.label}>Detalhes adicionais</span>
+                  <pre className={styles.pre}>{JSON.stringify(event.metadata, null, 2)}</pre>
+                </div>
+              </>
+            )}
+
             {(event.before || event.after) && (
               <>
                 <Separator className={styles.separator} />

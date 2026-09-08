@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+import { Audit } from '../audit/decorators/audit.decorator';
 import { CreateOnboardingDto } from './dtos/create-onboarding.dto';
 import { IntegrationQueryDto } from './dtos/integration-query.dto';
 import { UpdateIntegrationDto } from './dtos/update-integration.dto';
@@ -28,6 +29,7 @@ export class OnboardingController {
 
   @Post('company')
   @ApiOperation({ summary: 'Onboard a new company with its admin user' })
+  @Audit({ action: 'onboarding.company_created', entity: 'Company' })
   @ApiBody({ type: CreateOnboardingDto })
   @ApiResponse({ status: 201, description: 'Company onboarded successfully' })
   @ApiResponse({
@@ -58,6 +60,14 @@ export class OnboardingController {
 
   @Patch('company/:companyId/integration')
   @ApiOperation({ summary: "Update a company's Infor integration config" })
+  @Audit({
+    action: 'onboarding.integration_updated',
+    entity: 'Company',
+    entityIdFrom: 'params.companyId',
+    severity: 'warning',
+    // Body carries the clientSecret; sanitize() redacts it.
+    captureBody: true,
+  })
   @ApiBody({ type: UpdateIntegrationDto })
   @ApiResponse({ status: 200, description: 'Integration updated' })
   @ApiResponse({ status: 403, description: 'Not authorized' })

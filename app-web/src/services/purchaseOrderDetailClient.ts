@@ -30,7 +30,7 @@ interface RawLevel {
 
 interface RawAuditEvent {
   createdAt: string;
-  message: string;
+  message: string | null;
   severity: string;
   metadata: Record<string, unknown> | null;
 }
@@ -87,7 +87,7 @@ function toWorkflowLevels(levels: RawLevel[]): ApprovalLevel[] {
 function toTimeline(auditEvents: RawAuditEvent[]): TimelineEvent[] {
   return auditEvents.map((event) => ({
     at: event.createdAt,
-    label: event.message,
+    label: event.message ?? '—',
     type: event.severity as TimelineEvent['type'],
     detail: event.metadata ? JSON.stringify(event.metadata) : undefined,
   }));

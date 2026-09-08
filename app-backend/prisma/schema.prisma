@@ -30,45 +30,47 @@ enum AuthType {
 }
 
 model Company {
-  companyId                  String        @id @default(uuid()) @map("company_id") @db.Uuid
-  externalIntegrationCode    String        @unique @map("external_integration_code") @db.VarChar(50)
-  name                       String        @map("name") @db.VarChar(150)
-  cnpj                       String?       @map("cnpj") @db.VarChar(14)
-  status                     Boolean       @default(true)
-  externalIntegrationUrlBase String?       @map("external_integration_url_base") @db.Text
-  environment                Environment   @map("environment")
-  notes                      String?       @map("notes") @db.Text
-  createdAt                  DateTime      @default(now()) @map("created_at")
-  updatedAt                  DateTime      @updatedAt @map("updated_at")
+  companyId                  String      @id @default(uuid()) @map("company_id") @db.Uuid
+  externalIntegrationCode    String      @unique @map("external_integration_code") @db.VarChar(50)
+  name                       String      @map("name") @db.VarChar(150)
+  cnpj                       String?     @map("cnpj") @db.VarChar(14)
+  status                     Boolean     @default(true)
+  externalIntegrationUrlBase String?     @map("external_integration_url_base") @db.Text
+  environment                Environment @map("environment")
+  notes                      String?     @map("notes") @db.Text
+  createdAt                  DateTime    @default(now()) @map("created_at")
+  updatedAt                  DateTime    @updatedAt @map("updated_at")
 
-  users                      CompanyUser[]
-  integrations               CompanyIntegration[]
-  purchaseOrders             PurchaseOrder[]
-  rules                      Rule[]
+  users          CompanyUser[]
+  integrations   CompanyIntegration[]
+  purchaseOrders PurchaseOrder[]
+  rules          Rule[]
+  auditEvents    AuditEvent[]
 
   @@map("companies")
 }
 
 model User {
-  userId                  String         @id @default(uuid()) @map("user_id") @db.Uuid
-  name                    String         @map("name") @db.VarChar(150)
-  email                   String         @unique @map("email") @db.VarChar(150)
-  externalIntegrationUser String?        @unique @map("external_integration_user") @db.VarChar(50)
-  passwordHash            String?        @map("password_hash") @db.VarChar(255)
-  role                    UserRole       @map("role")
-  active                  Boolean        @default(true) @map("active")
-  approvalLimit           Decimal?       @map("approval_limit") @db.Decimal(15, 2)
-  createdAt               DateTime       @default(now()) @map("created_at")
-  updatedAt               DateTime       @updatedAt @map("updated_at")
+  userId                  String   @id @default(uuid()) @map("user_id") @db.Uuid
+  name                    String   @map("name") @db.VarChar(150)
+  email                   String   @unique @map("email") @db.VarChar(150)
+  externalIntegrationUser String?  @unique @map("external_integration_user") @db.VarChar(50)
+  passwordHash            String?  @map("password_hash") @db.VarChar(255)
+  role                    UserRole @map("role")
+  active                  Boolean  @default(true) @map("active")
+  approvalLimit           Decimal? @map("approval_limit") @db.Decimal(15, 2)
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
 
-  companies               CompanyUser[]
-  substitutes             UserSubstitute[] @relation("UserAsOriginal")
-  substitutedBy           UserSubstitute[] @relation("UserAsSubstitute")
-  ruleLevelApprovals      RuleLevelApprover[]
-  workflowApprovals       ApprovalWorkflowApprover[]
-  assignedDecisions       ApprovalDecision[] @relation("DecisionAssignedUser")
-  actedDecisions          ApprovalDecision[] @relation("DecisionActingUser")
-  auditedEvents           WorkflowAuditEvent[]
+  companies          CompanyUser[]
+  substitutes        UserSubstitute[]           @relation("UserAsOriginal")
+  substitutedBy      UserSubstitute[]           @relation("UserAsSubstitute")
+  ruleLevelApprovals RuleLevelApprover[]
+  workflowApprovals  ApprovalWorkflowApprover[]
+  assignedDecisions  ApprovalDecision[]         @relation("DecisionAssignedUser")
+  actedDecisions     ApprovalDecision[]         @relation("DecisionActingUser")
+  auditedEvents      WorkflowAuditEvent[]
+  auditEvents        AuditEvent[]               @relation("AuditActor")
 
   @@map("users")
 }
@@ -79,8 +81,8 @@ model CompanyUser {
   isDefault Boolean  @default(false) @map("is_default")
   createdAt DateTime @default(now()) @map("created_at")
 
-  company   Company  @relation(fields: [companyId], references: [companyId], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [companyId], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
   @@id([companyId, userId])
   @@index([userId])
@@ -92,50 +94,50 @@ model UserSubstitute {
   substituteId String   @map("substitute_id") @db.Uuid
   priority     Int      @default(1) @map("priority")
   createdAt    DateTime @default(now()) @map("created_at")
-  
-  user         User     @relation("UserAsOriginal", fields: [userId], references: [userId], onDelete: Cascade)
-  substitute   User     @relation("UserAsSubstitute", fields: [substituteId], references: [userId], onDelete: Cascade)
+
+  user       User @relation("UserAsOriginal", fields: [userId], references: [userId], onDelete: Cascade)
+  substitute User @relation("UserAsSubstitute", fields: [substituteId], references: [userId], onDelete: Cascade)
 
   @@id([userId, substituteId])
   @@map("users_substitutes")
 }
 
 model PurchaseOrder {
-  purchaseOrderId  String   @id @default(uuid()) @map("purchase_order_id") @db.Uuid
-  companyId        String   @map("company_id") @db.Uuid
+  purchaseOrderId String @id @default(uuid()) @map("purchase_order_id") @db.Uuid
+  companyId       String @map("company_id") @db.Uuid
 
-  sourceSystem     String   @map("source_system") @db.VarChar(50)
-  eventType        String   @map("event_type") @db.VarChar(100)
-  schemaVersion    String   @map("schema_version") @db.VarChar(20)
-  sentAt           DateTime @map("sent_at")
+  sourceSystem  String   @map("source_system") @db.VarChar(50)
+  eventType     String   @map("event_type") @db.VarChar(100)
+  schemaVersion String   @map("schema_version") @db.VarChar(20)
+  sentAt        DateTime @map("sent_at")
 
-  orderNumber      String   @map("order_number") @db.VarChar(50)
-  revision         Int      @map("revision")
-  orderType        String   @map("order_type") @db.VarChar(50)
-  statusLn         String   @map("status_ln") @db.VarChar(50)
-  erpCreatedAt     DateTime @map("erp_created_at")
-  buyerCode        String?  @map("buyer_code") @db.VarChar(50)
-  buyerName        String?  @map("buyer_name") @db.VarChar(150)
-  requesterCode    String?  @map("requester_code") @db.VarChar(50)
-  requesterName    String?  @map("requester_name") @db.VarChar(150)
-  supplierCode     String?  @map("supplier_code") @db.VarChar(50)
-  supplierName     String?  @map("supplier_name") @db.VarChar(150)
-  currency         String?  @map("currency") @db.VarChar(10)
-  totalAmount      Decimal  @map("total_amount") @db.Decimal(15, 2)
-  paymentTerms     String?  @map("payment_terms") @db.VarChar(50)
-  costCenter       String?  @map("cost_center") @db.VarChar(50)
-  department       String?  @map("department") @db.VarChar(150)
-  projectCode      String?  @map("project_code") @db.VarChar(50)
-  warehouse        String?  @map("warehouse") @db.VarChar(50)
-  additionalFields Json?    @map("additional_fields")
+  orderNumber      String              @map("order_number") @db.VarChar(50)
+  revision         Int                 @map("revision")
+  orderType        String              @map("order_type") @db.VarChar(50)
+  statusLn         String              @map("status_ln") @db.VarChar(50)
+  erpCreatedAt     DateTime            @map("erp_created_at")
+  buyerCode        String?             @map("buyer_code") @db.VarChar(50)
+  buyerName        String?             @map("buyer_name") @db.VarChar(150)
+  requesterCode    String?             @map("requester_code") @db.VarChar(50)
+  requesterName    String?             @map("requester_name") @db.VarChar(150)
+  supplierCode     String?             @map("supplier_code") @db.VarChar(50)
+  supplierName     String?             @map("supplier_name") @db.VarChar(150)
+  currency         String?             @map("currency") @db.VarChar(10)
+  totalAmount      Decimal             @map("total_amount") @db.Decimal(15, 2)
+  paymentTerms     String?             @map("payment_terms") @db.VarChar(50)
+  costCenter       String?             @map("cost_center") @db.VarChar(50)
+  department       String?             @map("department") @db.VarChar(150)
+  projectCode      String?             @map("project_code") @db.VarChar(50)
+  warehouse        String?             @map("warehouse") @db.VarChar(50)
+  additionalFields Json?               @map("additional_fields")
   status           PurchaseOrderStatus @default(PENDING) @map("status")
 
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  company          Company             @relation(fields: [companyId], references: [companyId], onDelete: Cascade)
-  lines            PurchaseOrderLine[]
-  workflow         ApprovalWorkflow?
+  company  Company             @relation(fields: [companyId], references: [companyId], onDelete: Cascade)
+  lines    PurchaseOrderLine[]
+  workflow ApprovalWorkflow?
 
   @@index([companyId, orderNumber])
   @@index([companyId, erpCreatedAt])
@@ -144,23 +146,23 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderLine {
-  purchaseOrderLineId String    @id @default(uuid()) @map("purchase_order_line_id") @db.Uuid
-  purchaseOrderId     String    @map("purchase_order_id") @db.Uuid
+  purchaseOrderLineId String @id @default(uuid()) @map("purchase_order_line_id") @db.Uuid
+  purchaseOrderId     String @map("purchase_order_id") @db.Uuid
 
-  lineNumber          Int       @map("line_number")
-  itemCode            String    @map("item_code") @db.VarChar(50)
-  itemDescription     String    @map("item_description") @db.VarChar(255)
-  quantity            Decimal   @map("quantity") @db.Decimal(15, 4)
-  unitOfMeasure       String    @map("unit_of_measure") @db.VarChar(10)
-  unitPrice           Decimal   @map("unit_price") @db.Decimal(15, 4)
-  lineAmount          Decimal   @map("line_amount") @db.Decimal(15, 2)
-  costCenter          String?   @map("cost_center") @db.VarChar(50)
-  category            String?   @map("category") @db.VarChar(100)
-  deliveryDate        DateTime? @map("delivery_date") @db.Date
+  lineNumber      Int       @map("line_number")
+  itemCode        String    @map("item_code") @db.VarChar(50)
+  itemDescription String    @map("item_description") @db.VarChar(255)
+  quantity        Decimal   @map("quantity") @db.Decimal(15, 4)
+  unitOfMeasure   String    @map("unit_of_measure") @db.VarChar(10)
+  unitPrice       Decimal   @map("unit_price") @db.Decimal(15, 4)
+  lineAmount      Decimal   @map("line_amount") @db.Decimal(15, 2)
+  costCenter      String?   @map("cost_center") @db.VarChar(50)
+  category        String?   @map("category") @db.VarChar(100)
+  deliveryDate    DateTime? @map("delivery_date") @db.Date
 
-  createdAt           DateTime  @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
-  purchaseOrder       PurchaseOrder @relation(fields: [purchaseOrderId], references: [purchaseOrderId], onDelete: Cascade)
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [purchaseOrderId], onDelete: Cascade)
 
   @@unique([purchaseOrderId, lineNumber])
   @@map("purchase_order_lines")
@@ -179,7 +181,7 @@ model CompanyIntegration {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  company       Company  @relation(fields: [companyId], references: [companyId], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [companyId], onDelete: Cascade)
 
   @@unique([companyId, provider])
   @@map("company_integrations")
@@ -238,10 +240,10 @@ model Rule {
   createdAt        DateTime             @default(now()) @map("created_at")
   updatedAt        DateTime             @updatedAt @map("updated_at")
 
-  company          Company        @relation(fields: [companyId], references: [companyId], onDelete: Restrict)
-  conditions       RuleCondition[]
-  levels           RuleLevel[]
-  workflows        ApprovalWorkflow[]
+  company    Company            @relation(fields: [companyId], references: [companyId], onDelete: Restrict)
+  conditions RuleCondition[]
+  levels     RuleLevel[]
+  workflows  ApprovalWorkflow[]
 
   @@index([companyId, status])
   @@index([companyId, priority])
@@ -259,7 +261,7 @@ model RuleCondition {
   valueList       Json?                   @map("value_list")
   createdAt       DateTime                @default(now()) @map("created_at")
 
-  rule            Rule @relation(fields: [ruleId], references: [ruleId], onDelete: Cascade)
+  rule Rule @relation(fields: [ruleId], references: [ruleId], onDelete: Cascade)
 
   @@index([ruleId])
   @@map("rule_conditions")
@@ -351,7 +353,7 @@ model ApprovalWorkflow {
   auditEvents   WorkflowAuditEvent[]
 
   @@index([status])
-  @@index([status, finalizedAt])
+  @@index([status, finalizedAt(sort: Desc)])
   @@map("approval_workflows")
 }
 
@@ -421,4 +423,53 @@ model WorkflowAuditEvent {
 
   @@index([workflowId, createdAt])
   @@map("workflow_audit_events")
+}
+
+// Generic, append-only audit trail covering every entity in the system.
+// Replaces WorkflowAuditEvent, which could only describe approval workflows.
+model AuditEvent {
+  // uuid(7) is time-ordered, so inserts stay sequential in the btree instead
+  // of scattering across pages the way random uuid(4) would.
+  auditEventId String   @id @default(uuid(7)) @map("audit_event_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // What happened
+  action   String  @map("action") @db.VarChar(60) // "rule.update", "workflow.decision_recorded"
+  entity   String  @map("entity") @db.VarChar(60)
+  // Polymorphic on purpose: no FK, so the trail survives the entity's deletion.
+  entityId String? @map("entity_id") @db.VarChar(100)
+  // Lowercase string rather than an enum: the web timeline casts this straight
+  // into TimelineEvent['type'] (see purchaseOrderDetailClient.ts#toTimeline).
+  severity String  @default("info") @map("severity") @db.VarChar(20)
+  message  String? @map("message") @db.Text
+
+  // Who did it
+  companyId   String? @map("company_id") @db.Uuid
+  actorUserId String? @map("actor_user_id") @db.Uuid
+  actorType   String  @default("SYSTEM") @map("actor_type") @db.VarChar(20) // USER | INTEGRATION | SYSTEM
+  // Immutable snapshot, so a deleted user still leaves a named actor behind.
+  actorLabel  String? @map("actor_label") @db.VarChar(150)
+
+  // Where it came from
+  correlationId String? @map("correlation_id") @db.Uuid
+  // VarChar, not inet: a malformed X-Forwarded-For must never fail the insert.
+  ip            String? @map("ip") @db.VarChar(45)
+  userAgent     String? @map("user_agent") @db.VarChar(512)
+  httpMethod    String? @map("http_method") @db.VarChar(10)
+  httpPath      String? @map("http_path") @db.VarChar(255)
+
+  // What changed
+  metadata Json? @map("metadata")
+  before   Json? @map("before")
+  after    Json? @map("after")
+
+  company Company? @relation(fields: [companyId], references: [companyId], onDelete: Restrict)
+  actor   User?    @relation("AuditActor", fields: [actorUserId], references: [userId], onDelete: SetNull)
+
+  @@index([companyId, createdAt(sort: Desc)])
+  @@index([entity, entityId, createdAt])
+  @@index([companyId, action, createdAt(sort: Desc)])
+  @@index([actorUserId, createdAt(sort: Desc)])
+  @@index([correlationId])
+  @@map("audit_events")
 }

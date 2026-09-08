@@ -74,6 +74,18 @@ interface BackendLoginResponse {
   companyId?: string;
 }
 
+// req.headers here are the browser's own headers on the NextAuth callback
+// request — the one point in the login flow that isn't proxied through
+// withAuthenticatedRoute, so the real IP/User-Agent are extracted by hand.
+function readHeader(
+  headers: Record<string, unknown> | undefined,
+  name: string,
+): string | undefined {
+  const value = headers?.[name];
+  if (Array.isArray(value)) return value[0];
+  return typeof value === 'string' ? value : undefined;
+}
+
 const credentialsProvider = CredentialsProvider({
   id: 'credentials',
   name: 'Credentials',
@@ -81,16 +93,29 @@ const credentialsProvider = CredentialsProvider({
     identifier: { label: 'Usuário', type: 'text' },
     password: { label: 'Senha', type: 'password' },
   },
-  async authorize(credentials) {
+  async authorize(credentials, req) {
     if (!credentials?.identifier || !credentials?.password) {
       return null;
     }
 
+    const forwardedFor = readHeader(req?.headers, 'x-forwarded-for');
+    const ip = forwardedFor?.split(',')[0]?.trim() ?? readHeader(req?.headers, 'x-real-ip');
+    const userAgent = readHeader(req?.headers, 'user-agent');
+
     try {
-      const { data } = await internalApiClient.post<BackendLoginResponse>('/auth/login', {
-        email: credentials.identifier,
-        password: credentials.password,
-      });
+      const { data } = await internalApiClient.post<BackendLoginResponse>(
+        '/auth/login',
+        {
+          email: credentials.identifier,
+          password: credentials.password,
+        },
+        {
+          headers: {
+            ...(ip && { 'x-forwarded-for': ip }),
+            ...(userAgent && { 'user-agent': userAgent }),
+          },
+        },
+      );
 
       return {
         id: data.userId,

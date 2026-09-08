@@ -196,6 +196,8 @@ export interface Rule {
   status: 'Ativa' | 'Inativa';
 }
 
+export type AuditSeverity = 'info' | 'success' | 'warning' | 'error';
+
 export interface AuditEvent {
   id: string;
   at: string;
@@ -206,8 +208,18 @@ export interface AuditEvent {
   ip: string;
   userAgent: string;
   correlationId: string;
+  severity: AuditSeverity;
+  message?: string;
+  metadata?: Record<string, unknown>;
   before?: Record<string, unknown>;
   after?: Record<string, unknown>;
+}
+
+export interface AuditEventsPage {
+  items: AuditEvent[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 export interface MonthlyStat {

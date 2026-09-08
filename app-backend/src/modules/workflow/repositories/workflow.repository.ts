@@ -37,15 +37,6 @@ export interface CreateDecisionInput {
   comment?: string;
 }
 
-export interface CreateAuditEventInput {
-  workflowId: string;
-  type: string;
-  severity: 'info' | 'success' | 'warning' | 'error';
-  actorUserId?: string;
-  message: string;
-  metadata?: Record<string, unknown>;
-}
-
 export interface UpdateWorkflowInput {
   status?: WorkflowStatus;
   currentLevel?: number | null;
@@ -129,7 +120,6 @@ export abstract class WorkflowRepository {
     workflowId: string,
     data: UpdateWorkflowInput,
   ): Promise<WorkflowWithRelations>;
-  abstract addAuditEvent(input: CreateAuditEventInput): Promise<void>;
   abstract updatePurchaseOrderStatus(
     purchaseOrderId: string,
     status: PurchaseOrderStatus,

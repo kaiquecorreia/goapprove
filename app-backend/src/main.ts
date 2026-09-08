@@ -16,6 +16,13 @@ export async function bootstrap() {
     adapter,
   );
 
+  // Without this req.ip is the load balancer's address, so every audited
+  // event would record the proxy instead of the caller.
+  app.set('trust proxy', process.env.TRUST_PROXY ?? 'loopback');
+
+  // Lets the audit writer flush its buffer before the process exits.
+  app.enableShutdownHooks();
+
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',

@@ -78,8 +78,12 @@ const ALL_PAGE_ROUTES = [
   ERoutePath.INTEGRATIONS,
 ];
 
+// AUDIT is deliberately excluded from OWNER: only ADMINISTRATOR may see the
+// audit trail (it exposes IPs, user agents and change diffs of other users).
+const OWNER_PAGE_ROUTES = ALL_PAGE_ROUTES.filter((route) => route !== ERoutePath.AUDIT);
+
 export const ROLE_ROUTE_ACCESS: Record<EUserRole, ERoutePath[]> = {
-  [EUserRole.OWNER]: ALL_PAGE_ROUTES,
+  [EUserRole.OWNER]: OWNER_PAGE_ROUTES,
   [EUserRole.ADMINISTRATOR]: ALL_PAGE_ROUTES,
   [EUserRole.APPROVER]: [ERoutePath.OCS_PENDING],
   [EUserRole.VIEWER]: [ERoutePath.HISTORY],
@@ -113,6 +117,7 @@ export function canAccessRoute(role: EUserRole, pathname: string): boolean {
 // /api/integration is deliberately excluded — its access rule isn't role-based
 // (see middleware.ts).
 const API_ROUTE_ACCESS: { prefix: string; routePath: ERoutePath }[] = [
+  { prefix: '/api/audit', routePath: ERoutePath.AUDIT },
   { prefix: '/api/companies', routePath: ERoutePath.COMPANIES },
   { prefix: '/api/ocs', routePath: ERoutePath.OCS_PENDING },
   { prefix: '/api/rules', routePath: ERoutePath.RULES },
@@ -190,7 +195,7 @@ export const navigationGroups: NavigationGroup[] = [
         name: 'Auditoria',
         href: ERoutePath.AUDIT,
         icon: ShieldCheck,
-        allowedRoles: [EUserRole.OWNER, EUserRole.ADMINISTRATOR],
+        allowedRoles: [EUserRole.ADMINISTRATOR],
       },
     ],
   },

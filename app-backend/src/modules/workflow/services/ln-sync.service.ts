@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Provider } from '@prisma/client';
 
 import { CryptoService } from '../../../shared/crypto/crypto.service';
+import { AuditService } from '../../audit/services/audit.service';
 import { CompanyIntegrationRepository } from '../../onboarding/repositories/company-integration.repository';
 import { WorkflowRepository } from '../repositories/workflow.repository';
 import { WorkflowWithRelations } from '../types/workflow-with-relations';
@@ -16,6 +17,7 @@ export class LnSyncService {
     private readonly companyIntegrationRepository: CompanyIntegrationRepository,
     private readonly cryptoService: CryptoService,
     private readonly lnApiClient: LnApiClient,
+    private readonly auditService: AuditService,
   ) {}
 
   async sendResult(workflowId: string): Promise<void> {
@@ -34,8 +36,7 @@ export class LnSyncService {
 
     if (!integration || !integration.active) {
       await this.markFailed(
-        workflow.workflowId,
-        workflow.lnSyncAttempts,
+        workflow,
         'No active LN integration configured for company',
       );
       return;
@@ -57,11 +58,14 @@ export class LnSyncService {
         lnLastError: null,
       });
 
-      await this.workflowRepository.addAuditEvent({
-        workflowId: workflow.workflowId,
-        type: 'LN_SYNC_SENT',
+      this.auditService.log({
+        action: 'workflow.ln_sync_sent',
+        entity: 'PurchaseOrder',
+        entityId: workflow.purchaseOrderId,
+        companyId: workflow.purchaseOrder.companyId,
         severity: 'success',
         message: 'Approval result sent to LN successfully.',
+        metadata: { workflowId: workflow.workflowId },
       });
     } catch (error) {
       const message =
@@ -69,32 +73,34 @@ export class LnSyncService {
           ? error.message
           : 'Unknown error sending result to LN';
 
-      await this.markFailed(
-        workflow.workflowId,
-        workflow.lnSyncAttempts,
-        message,
-      );
+      await this.markFailed(workflow, message);
     }
   }
 
   private async markFailed(
-    workflowId: string,
-    previousAttempts: number,
+    workflow: WorkflowWithRelations,
     message: string,
   ): Promise<void> {
-    this.logger.error(`LN sync failed for workflow ${workflowId}: ${message}`);
+    this.logger.error(
+      `LN sync failed for workflow ${workflow.workflowId}: ${message}`,
+    );
 
-    await this.workflowRepository.updateWorkflow(workflowId, {
+    await this.workflowRepository.updateWorkflow(workflow.workflowId, {
       lnSyncStatus: 'FAILED',
-      lnSyncAttempts: previousAttempts + 1,
+      lnSyncAttempts: workflow.lnSyncAttempts + 1,
       lnLastError: message,
     });
 
-    await this.workflowRepository.addAuditEvent({
-      workflowId,
-      type: 'LN_SYNC_FAILED',
+    // Reached from a catch block: AuditService.log() never throws, so it
+    // cannot mask the original failure.
+    this.auditService.log({
+      action: 'workflow.ln_sync_failed',
+      entity: 'PurchaseOrder',
+      entityId: workflow.purchaseOrderId,
+      companyId: workflow.purchaseOrder.companyId,
       severity: 'error',
       message,
+      metadata: { workflowId: workflow.workflowId },
     });
   }
 

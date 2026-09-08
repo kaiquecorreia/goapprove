@@ -4,6 +4,7 @@ import { WorkflowRepository } from '../repositories/workflow.repository';
 import { UserRepository } from '../../user/repositories/user.repository';
 import { CompanyAccessService } from '../../company/services/company-access.service';
 import { TransactionService } from '../../../shared/prisma/transaction.service';
+import { AuditService } from '../../audit/services/audit.service';
 import { AuthenticatedUser } from '../../../shared/types/authenticated-user';
 import { WorkflowWithRelations } from '../types/workflow-with-relations';
 
@@ -67,6 +68,7 @@ describe('WorkflowService', () => {
       'getAccessibleCompanyIds' | 'assertCompanyAccess'
     >
   >;
+  let auditService: jest.Mocked<Pick<AuditService, 'log' | 'logNow'>>;
   let service: WorkflowService;
 
   beforeEach(() => {
@@ -82,7 +84,6 @@ describe('WorkflowService', () => {
       activateLevel: jest.fn(),
       unlockNextApprover: jest.fn(),
       updateWorkflow: jest.fn(),
-      addAuditEvent: jest.fn(),
       updatePurchaseOrderStatus: jest.fn(),
     };
 
@@ -93,6 +94,7 @@ describe('WorkflowService', () => {
       getAccessibleCompanyIds: jest.fn().mockResolvedValue(null),
       assertCompanyAccess: jest.fn().mockResolvedValue(undefined),
     };
+    auditService = { log: jest.fn(), logNow: jest.fn() };
 
     service = new WorkflowService(
       workflowRepository,
@@ -100,6 +102,7 @@ describe('WorkflowService', () => {
       transactionService as unknown as TransactionService,
       lnSyncService as unknown as LnSyncService,
       companyAccessService as unknown as CompanyAccessService,
+      auditService as unknown as AuditService,
     );
   });
 
@@ -393,8 +396,12 @@ describe('WorkflowService', () => {
           levels: [],
         }),
       );
-      expect(workflowRepository.addAuditEvent).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'NO_RULE_MATCHED' }),
+      expect(auditService.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'workflow.no_rule_matched',
+          entity: 'PurchaseOrder',
+          entityId: 'po-1',
+        }),
       );
       expect(workflowRepository.updatePurchaseOrderStatus).toHaveBeenCalledWith(
         'po-1',
@@ -420,8 +427,12 @@ describe('WorkflowService', () => {
           currentLevel: 1,
         }),
       );
-      expect(workflowRepository.addAuditEvent).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'RULE_APPLIED' }),
+      expect(auditService.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'workflow.rule_applied',
+          entity: 'PurchaseOrder',
+          entityId: 'po-1',
+        }),
       );
     });
   });

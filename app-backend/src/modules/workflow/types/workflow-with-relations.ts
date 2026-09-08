@@ -4,11 +4,21 @@ import {
   ApprovalWorkflowApprover,
   ApprovalWorkflowLevel,
   Company,
+  Prisma,
   PurchaseOrder,
   PurchaseOrderLine,
   User,
-  WorkflowAuditEvent,
 } from '@prisma/client';
+
+// The slice of the generic audit trail the OC timeline renders. Field names
+// match what the web client already maps (see purchaseOrderDetailClient).
+export type WorkflowTimelineEvent = {
+  createdAt: Date;
+  message: string | null;
+  severity: string;
+  metadata: Prisma.JsonValue;
+  action: string;
+};
 
 export type ApprovalWorkflowApproverWithUser = ApprovalWorkflowApprover & {
   user: Omit<User, 'passwordHash'>;
@@ -21,7 +31,7 @@ export type ApprovalWorkflowLevelWithRelations = ApprovalWorkflowLevel & {
 
 export type WorkflowWithRelations = ApprovalWorkflow & {
   levels: ApprovalWorkflowLevelWithRelations[];
-  auditEvents: WorkflowAuditEvent[];
+  auditEvents: WorkflowTimelineEvent[];
   purchaseOrder: PurchaseOrder & {
     company: Company;
     lines: PurchaseOrderLine[];

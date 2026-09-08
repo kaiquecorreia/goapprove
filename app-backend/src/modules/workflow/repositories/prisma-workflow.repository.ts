@@ -9,7 +9,6 @@ import {
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { WorkflowWithRelations } from '../types/workflow-with-relations';
 import {
-  CreateAuditEventInput,
   CreateDecisionInput,
   CreateWorkflowInput,
   FindPendingWorkflowsCriteria,
@@ -30,7 +29,6 @@ const WORKFLOW_INCLUDE = {
     },
     orderBy: { level: 'asc' },
   },
-  auditEvents: { orderBy: { createdAt: 'asc' } },
   purchaseOrder: { include: { company: true, lines: true } },
   rule: { select: { name: true, code: true } },
 } satisfies Prisma.ApprovalWorkflowInclude;
@@ -61,56 +59,86 @@ export class PrismaWorkflowRepository implements WorkflowRepository {
   constructor(private readonly prismaService: PrismaService) {}
 
   async create(input: CreateWorkflowInput): Promise<WorkflowWithRelations> {
-    return this.prismaService.getClient().approvalWorkflow.create({
-      data: {
-        purchaseOrderId: input.purchaseOrderId,
-        ruleId: input.ruleId,
-        status: input.status,
-        currentLevel: input.currentLevel,
-        requireCommentOnApprove: input.requireCommentOnApprove,
-        requireCommentOnReject: input.requireCommentOnReject,
-        levels: {
-          create: input.levels.map((level) => {
-            const isActiveLevel = level.levelNumber === input.currentLevel;
+    // A workflow being created has no trail yet.
+    const workflow = await this.prismaService
+      .getClient()
+      .approvalWorkflow.create({
+        data: {
+          purchaseOrderId: input.purchaseOrderId,
+          ruleId: input.ruleId,
+          status: input.status,
+          currentLevel: input.currentLevel,
+          requireCommentOnApprove: input.requireCommentOnApprove,
+          requireCommentOnReject: input.requireCommentOnReject,
+          levels: {
+            create: input.levels.map((level) => {
+              const isActiveLevel = level.levelNumber === input.currentLevel;
 
-            return {
-              level: level.levelNumber,
-              mode: level.mode,
-              status: isActiveLevel ? 'PENDING' : 'LOCKED',
-              startedAt: isActiveLevel ? new Date() : null,
-              approvers: {
-                create: level.approverUserIds.map((userId, index) => ({
-                  userId,
-                  sequenceOrder: index + 1,
-                  status: this.initialApproverStatus(
-                    isActiveLevel,
-                    level.mode,
-                    index,
-                  ),
-                })),
-              },
-            };
-          }),
+              return {
+                level: level.levelNumber,
+                mode: level.mode,
+                status: isActiveLevel ? 'PENDING' : 'LOCKED',
+                startedAt: isActiveLevel ? new Date() : null,
+                approvers: {
+                  create: level.approverUserIds.map((userId, index) => ({
+                    userId,
+                    sequenceOrder: index + 1,
+                    status: this.initialApproverStatus(
+                      isActiveLevel,
+                      level.mode,
+                      index,
+                    ),
+                  })),
+                },
+              };
+            }),
+          },
         },
-      },
-      include: WORKFLOW_INCLUDE,
-    });
+        include: WORKFLOW_INCLUDE,
+      });
+
+    return { ...workflow, auditEvents: [] };
   }
 
+  // The audit trail no longer hangs off the workflow by FK, so the timeline is
+  // fetched alongside it, keyed by (entity, entityId). The JSON shape returned
+  // to the web client is unchanged.
   async findByPurchaseOrderId(
     purchaseOrderId: string,
   ): Promise<WorkflowWithRelations | null> {
-    return this.prismaService.getClient().approvalWorkflow.findUnique({
-      where: { purchaseOrderId },
-      include: WORKFLOW_INCLUDE,
-    });
+    const client = this.prismaService.getClient();
+
+    const [workflow, auditEvents] = await Promise.all([
+      client.approvalWorkflow.findUnique({
+        where: { purchaseOrderId },
+        include: WORKFLOW_INCLUDE,
+      }),
+      client.auditEvent.findMany({
+        where: { entity: 'PurchaseOrder', entityId: purchaseOrderId },
+        select: {
+          createdAt: true,
+          message: true,
+          severity: true,
+          metadata: true,
+          action: true,
+        },
+        orderBy: { createdAt: 'asc' },
+      }),
+    ]);
+
+    return workflow ? { ...workflow, auditEvents } : null;
   }
 
+  // Hot path for LN sync, which never reads the timeline: skip the extra query.
   async findById(workflowId: string): Promise<WorkflowWithRelations | null> {
-    return this.prismaService.getClient().approvalWorkflow.findUnique({
-      where: { workflowId },
-      include: WORKFLOW_INCLUDE,
-    });
+    const workflow = await this.prismaService
+      .getClient()
+      .approvalWorkflow.findUnique({
+        where: { workflowId },
+        include: WORKFLOW_INCLUDE,
+      });
+
+    return workflow ? { ...workflow, auditEvents: [] } : null;
   }
 
   async findPending(
@@ -284,28 +312,21 @@ export class PrismaWorkflowRepository implements WorkflowRepository {
     }
   }
 
+  // Callers only read scalar fields off the result, so the trail is not
+  // re-fetched here.
   async updateWorkflow(
     workflowId: string,
     data: UpdateWorkflowInput,
   ): Promise<WorkflowWithRelations> {
-    return this.prismaService.getClient().approvalWorkflow.update({
-      where: { workflowId },
-      data,
-      include: WORKFLOW_INCLUDE,
-    });
-  }
+    const workflow = await this.prismaService
+      .getClient()
+      .approvalWorkflow.update({
+        where: { workflowId },
+        data,
+        include: WORKFLOW_INCLUDE,
+      });
 
-  async addAuditEvent(input: CreateAuditEventInput): Promise<void> {
-    await this.prismaService.getClient().workflowAuditEvent.create({
-      data: {
-        workflowId: input.workflowId,
-        type: input.type,
-        severity: input.severity,
-        actorUserId: input.actorUserId,
-        message: input.message,
-        metadata: input.metadata as Prisma.InputJsonValue | undefined,
-      },
-    });
+    return { ...workflow, auditEvents: [] };
   }
 
   async updatePurchaseOrderStatus(

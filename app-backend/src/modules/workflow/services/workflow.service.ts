@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { ApprovalMode, LevelStatus } from '@prisma/client';
 
+import { AuditService } from '../../audit/services/audit.service';
 import { UserRepository } from '../../user/repositories/user.repository';
 import { CompanyAccessService } from '../../company/services/company-access.service';
 import { TransactionService } from '../../../shared/prisma/transaction.service';
@@ -35,6 +36,7 @@ export class WorkflowService {
     private readonly transactionService: TransactionService,
     private readonly lnSyncService: LnSyncService,
     private readonly companyAccessService: CompanyAccessService,
+    private readonly auditService: AuditService,
   ) {}
 
   async startWorkflow(
@@ -53,12 +55,14 @@ export class WorkflowService {
           levels: [],
         });
 
-        await this.workflowRepository.addAuditEvent({
-          workflowId: workflow.workflowId,
-          type: 'NO_RULE_MATCHED',
+        this.auditService.log({
+          action: 'workflow.no_rule_matched',
+          entity: 'PurchaseOrder',
+          entityId: purchaseOrderId,
           severity: 'warning',
           message:
             'No active rule matched this purchase order; manual assignment required.',
+          metadata: { workflowId: workflow.workflowId },
         });
 
         await this.workflowRepository.updatePurchaseOrderStatus(
@@ -85,12 +89,14 @@ export class WorkflowService {
         })),
       });
 
-      await this.workflowRepository.addAuditEvent({
-        workflowId: workflow.workflowId,
-        type: 'RULE_APPLIED',
+      this.auditService.log({
+        action: 'workflow.rule_applied',
+        entity: 'PurchaseOrder',
+        entityId: purchaseOrderId,
         severity: 'info',
         message: `Rule "${ruleMatch.rule.name}" (${ruleMatch.rule.code}) matched and applied.`,
         metadata: {
+          workflowId: workflow.workflowId,
           ruleId: ruleMatch.rule.ruleId,
           conflictedWith: ruleMatch.conflictedWith,
         },
@@ -304,13 +310,20 @@ export class WorkflowService {
         now,
       );
 
-      await this.workflowRepository.addAuditEvent({
-        workflowId: workflow.workflowId,
-        type: 'DECISION_RECORDED',
+      this.auditService.log({
+        action: 'workflow.decision_recorded',
+        entity: 'PurchaseOrder',
+        entityId: workflow.purchaseOrderId,
+        companyId: workflow.purchaseOrder.companyId,
         severity: input.decision === 'APPROVED' ? 'success' : 'warning',
-        actorUserId: input.actingUserId,
         message: `${input.decision} recorded on level ${currentLevel.level}`,
-        metadata: { assignedUserId, levelId: currentLevel.levelId },
+        metadata: {
+          workflowId: workflow.workflowId,
+          assignedUserId,
+          levelId: currentLevel.levelId,
+        },
+        // Compliance-critical: must be durable before the response returns.
+        critical: true,
       });
 
       if (input.decision === 'REJECTED') {
@@ -345,11 +358,17 @@ export class WorkflowService {
           await this.workflowRepository.updateWorkflow(workflow.workflowId, {
             currentLevel: nextLevel.level,
           });
-          await this.workflowRepository.addAuditEvent({
-            workflowId: workflow.workflowId,
-            type: 'LEVEL_UNLOCKED',
+          this.auditService.log({
+            action: 'workflow.level_unlocked',
+            entity: 'PurchaseOrder',
+            entityId: workflow.purchaseOrderId,
+            companyId: workflow.purchaseOrder.companyId,
             severity: 'info',
             message: `Level ${nextLevel.level} unlocked`,
+            metadata: {
+              workflowId: workflow.workflowId,
+              levelId: nextLevel.levelId,
+            },
           });
 
           return false;
@@ -420,11 +439,18 @@ export class WorkflowService {
       lnSyncStatus: 'PENDING',
     });
 
-    await this.workflowRepository.addAuditEvent({
-      workflowId: workflow.workflowId,
-      type: outcome === 'APPROVED' ? 'WORKFLOW_APPROVED' : 'WORKFLOW_REJECTED',
+    this.auditService.log({
+      action:
+        outcome === 'APPROVED'
+          ? 'workflow.workflow_approved'
+          : 'workflow.workflow_rejected',
+      entity: 'PurchaseOrder',
+      entityId: workflow.purchaseOrderId,
+      companyId: workflow.purchaseOrder.companyId,
       severity: outcome === 'APPROVED' ? 'success' : 'error',
       message: `Workflow finalized as ${outcome}`,
+      metadata: { workflowId: workflow.workflowId },
+      critical: true,
     });
 
     await this.workflowRepository.updatePurchaseOrderStatus(

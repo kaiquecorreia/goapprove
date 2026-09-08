@@ -38,9 +38,31 @@ export class PrismaService implements OnModuleDestroy {
     return this.prisma;
   }
 
+  // The root client, ignoring any transaction in progress. Used by writes that
+  // must not be rolled back with the surrounding work (the audit trail), which
+  // getClient() cannot provide since it always prefers the transaction client.
+  getRootClient(): PrismaClient {
+    return this.prisma;
+  }
+
   async runInTransaction<T>(fn: () => Promise<T>): Promise<T> {
-    return this.prisma.$transaction(async (tx) => {
-      return this.clsService.prismaTransaction.run(tx, fn);
+    const hooks: Array<() => void> = [];
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      return this.clsService.prismaTransaction.run(tx, () =>
+        this.clsService.transactionHooks.run(hooks, fn),
+      );
     });
+
+    // Only reached once the transaction committed.
+    for (const hook of hooks) {
+      try {
+        hook();
+      } catch (error) {
+        this.logger.error('Post-commit hook failed', error as Error);
+      }
+    }
+
+    return result;
   }
 }

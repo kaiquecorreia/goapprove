@@ -20,16 +20,30 @@ jest.mock('@nestjs/swagger', () => ({
   ApiBearerAuth: () => () => undefined,
   ApiTags: () => () => undefined,
   ApiConsumes: () => () => undefined,
+  ApiOperation: () => () => undefined,
+  ApiResponse: () => () => undefined,
+  ApiQuery: () => () => undefined,
+  ApiParam: () => () => undefined,
+  ApiBody: () => () => undefined,
+  ApiExcludeEndpoint: () => () => undefined,
+  PartialType: (base: unknown) => base,
+  OmitType: (base: unknown) => base,
+  PickType: (base: unknown) => base,
+  IntersectionType: (base: unknown) => base,
 }));
 jest.mock('./app.module');
 
 describe('main.ts', () => {
   const mockApp = {
+    set: jest.fn(),
+    enableShutdownHooks: jest.fn(),
     enableCors: jest.fn(),
     useGlobalPipes: jest.fn(),
     useStaticAssets: jest.fn(),
     listen: jest.fn().mockResolvedValue(undefined),
   } as unknown as {
+    set: jest.MockedFunction<(key: string, value: unknown) => void>;
+    enableShutdownHooks: jest.MockedFunction<() => void>;
     enableCors: jest.MockedFunction<(options: unknown) => void>;
     useGlobalPipes: jest.MockedFunction<(pipe: unknown) => void>;
     useStaticAssets: jest.MockedFunction<(path: string) => void>;

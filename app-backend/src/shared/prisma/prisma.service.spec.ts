@@ -1,6 +1,6 @@
 import { ClsService } from './cls.service';
 import { PrismaService } from './prisma.service';
-import { PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 jest.mock('pg', () => ({
   Pool: jest.fn().mockImplementation(() => ({
@@ -37,10 +37,24 @@ describe('PrismaService', () => {
     it('retorna o cliente transacional quando há transação no contexto', () => {
       const fakeTransaction = {
         isTransaction: true,
-      } as unknown as PrismaClient['$transaction'];
+      } as unknown as Prisma.TransactionClient;
       clsService.prismaTransaction.run(fakeTransaction, () => {
         const client = service.getClient();
         expect(client).toBe(fakeTransaction);
+      });
+    });
+  });
+
+  describe('getRootClient()', () => {
+    it('ignora a transação do contexto e retorna sempre o cliente raiz', () => {
+      const rootClient = service.getRootClient();
+      const fakeTransaction = {
+        isTransaction: true,
+      } as unknown as Prisma.TransactionClient;
+
+      clsService.prismaTransaction.run(fakeTransaction, () => {
+        expect(service.getClient()).toBe(fakeTransaction);
+        expect(service.getRootClient()).toBe(rootClient);
       });
     });
   });
@@ -84,5 +98,70 @@ describe('PrismaService', () => {
       expect(fn).toHaveBeenCalled();
       expect(result).toEqual(fakeResult);
     });
+
+    it('executa os hooks registrados somente após o commit', async () => {
+      mockTransaction(service);
+
+      const order: string[] = [];
+      const hook = jest.fn(() => order.push('hook'));
+
+      await service.runInTransaction(() => {
+        clsService.transactionHooks.getStore()?.push(hook);
+        order.push('work');
+        return Promise.resolve(null);
+      });
+
+      expect(hook).toHaveBeenCalledTimes(1);
+      expect(order).toEqual(['work', 'hook']);
+    });
+
+    it('não executa os hooks quando a transação falha', async () => {
+      mockTransaction(service);
+
+      const hook = jest.fn();
+
+      await expect(
+        service.runInTransaction(() => {
+          clsService.transactionHooks.getStore()?.push(hook);
+          throw new Error('rollback');
+        }),
+      ).rejects.toThrow('rollback');
+
+      expect(hook).not.toHaveBeenCalled();
+    });
+
+    it('não deixa a falha de um hook interromper os demais', async () => {
+      mockTransaction(service);
+
+      const failing = jest.fn(() => {
+        throw new Error('hook failed');
+      });
+      const following = jest.fn();
+
+      await expect(
+        service.runInTransaction(() => {
+          const hooks = clsService.transactionHooks.getStore();
+          hooks?.push(failing, following);
+          return Promise.resolve(null);
+        }),
+      ).resolves.toBeNull();
+
+      expect(failing).toHaveBeenCalled();
+      expect(following).toHaveBeenCalled();
+    });
   });
 });
+
+function mockTransaction(service: PrismaService): void {
+  const serviceAccess = service as unknown as {
+    prisma: {
+      $transaction: jest.MockedFunction<
+        (fn: (tx: unknown) => Promise<unknown>) => Promise<unknown>
+      >;
+    };
+  };
+
+  serviceAccess.prisma.$transaction.mockImplementation(
+    async (fn: (tx: unknown) => Promise<unknown>) => fn({ txClient: true }),
+  );
+}

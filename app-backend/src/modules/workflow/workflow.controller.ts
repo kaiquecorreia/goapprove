@@ -24,6 +24,7 @@ import { Roles } from '../../shared/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { AuthenticatedUser } from '../../shared/types/authenticated-user';
+import { Audit } from '../audit/decorators/audit.decorator';
 import { ListPendingWorkflowsDto } from './dtos/list-pending-workflows.dto';
 import { ListWorkflowsHistoryDto } from './dtos/list-workflows-history.dto';
 import { RecordDecisionDto } from './dtos/record-decision.dto';
@@ -149,6 +150,11 @@ export class WorkflowController {
   }
 
   @Post(':purchaseOrderId/ln-sync/retry')
+  @Audit({
+    action: 'workflow.ln_sync_retry_requested',
+    entity: 'PurchaseOrder',
+    entityIdFrom: 'params.purchaseOrderId',
+  })
   @ApiOperation({
     summary: 'Retry sending the final decision to LN after a previous failure',
   })

@@ -24,6 +24,7 @@ import { Roles } from '../../shared/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { AuthenticatedUser } from '../../shared/types/authenticated-user';
+import { Audit } from '../audit/decorators/audit.decorator';
 import { CreateCompanyDto } from './dtos/create-company.dto';
 import { UpdateCompanyDto } from './dtos/update-company.dto';
 import { CreateCompanyUseCase } from './use-cases/create-company.use-case';
@@ -43,6 +44,7 @@ export class CompanyController {
 
   @Post()
   @Roles(UserRole.ADMINISTRATOR)
+  @Audit({ action: 'company.create', entity: 'Company' })
   @ApiOperation({ summary: 'Create a new company' })
   @ApiBody({ type: CreateCompanyDto })
   @ApiResponse({ status: 201, description: 'Company created successfully' })
@@ -75,6 +77,7 @@ export class CompanyController {
 
   @Patch(':companyId')
   @ApiOperation({ summary: 'Update a company' })
+  @Audit({ action: 'company.update', entity: 'Company' })
   @ApiParam({ name: 'companyId', type: String, format: 'uuid' })
   @ApiBody({ type: UpdateCompanyDto })
   @ApiResponse({ status: 200, description: 'Company updated successfully' })

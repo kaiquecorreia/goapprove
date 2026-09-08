@@ -1,6 +1,7 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+import { Audit } from '../audit/decorators/audit.decorator';
 import { ReceivePurchaseOrderDto } from './dtos/receive-purchase-order.dto';
 import { ReceivePurchaseOrderUseCase } from './use-cases/receive-purchase-order.use-case';
 
@@ -12,6 +13,12 @@ export class PurchaseOrderController {
   ) {}
 
   @Post()
+  @Audit({
+    action: 'purchase_order.received',
+    entity: 'PurchaseOrder',
+    // The body carries every PO line; storing it would dwarf the trail.
+    captureBody: false,
+  })
   @ApiOperation({
     summary: 'Receive a purchase order event from an ERP (e.g. INFOR_LN)',
   })

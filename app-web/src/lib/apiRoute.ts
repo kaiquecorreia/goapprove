@@ -3,6 +3,7 @@ import { Session } from 'next-auth';
 
 import { requireSession, unauthorizedResponse } from './apiAuth';
 import { resolveBackendAccessToken } from './backendAuth';
+import { resolveOriginContext, runWithOriginContext } from './requestContext';
 
 type AuthContext = { session: Session; token: string };
 type RouteHandler<P> = (
@@ -24,7 +25,9 @@ export function withAuthenticatedRoute<P = Record<string, string>>(handler: Rout
 
     try {
       const token = await resolveBackendAccessToken(session);
-      return await handler(req, routeContext, { session, token });
+      return await runWithOriginContext(resolveOriginContext(req), () =>
+        handler(req, routeContext, { session, token }),
+      );
     } catch {
       return unauthorizedResponse();
     }

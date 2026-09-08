@@ -26,6 +26,7 @@ import { Roles } from '../../shared/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { AuthenticatedUser } from '../../shared/types/authenticated-user';
+import { Audit } from '../audit/decorators/audit.decorator';
 import { CreateRuleDto } from './dtos/create-rule.dto';
 import { SetRuleStatusDto } from './dtos/set-rule-status.dto';
 import { UpdateRuleDto } from './dtos/update-rule.dto';
@@ -56,6 +57,7 @@ export class RuleController {
 
   @Post()
   @Roles(...RULE_MANAGEMENT_ROLES)
+  @Audit({ action: 'rule.create', entity: 'Rule' })
   @ApiOperation({ summary: 'Create a new business rule' })
   @ApiBody({ type: CreateRuleDto })
   @ApiResponse({ status: 201, description: 'Rule created successfully' })
@@ -92,6 +94,7 @@ export class RuleController {
 
   @Patch(':ruleId')
   @Roles(...RULE_MANAGEMENT_ROLES)
+  @Audit({ action: 'rule.update', entity: 'Rule' })
   @ApiOperation({ summary: 'Update a rule' })
   @ApiParam({ name: 'ruleId', type: String, format: 'uuid' })
   @ApiBody({ type: UpdateRuleDto })
@@ -107,6 +110,7 @@ export class RuleController {
 
   @Patch(':ruleId/status')
   @Roles(...RULE_MANAGEMENT_ROLES)
+  @Audit({ action: 'rule.set_status', entity: 'Rule' })
   @ApiOperation({ summary: 'Activate or deactivate a rule' })
   @ApiParam({ name: 'ruleId', type: String, format: 'uuid' })
   @ApiBody({ type: SetRuleStatusDto })
@@ -121,6 +125,7 @@ export class RuleController {
 
   @Delete(':ruleId')
   @Roles(...RULE_MANAGEMENT_ROLES)
+  @Audit({ action: 'rule.delete', entity: 'Rule', severity: 'warning' })
   @ApiOperation({ summary: 'Soft-delete (deactivate) a rule' })
   @ApiParam({ name: 'ruleId', type: String, format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Rule deactivated' })

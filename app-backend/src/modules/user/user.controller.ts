@@ -21,6 +21,7 @@ import {
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { AuthenticatedUser } from '../../shared/types/authenticated-user';
+import { Audit } from '../audit/decorators/audit.decorator';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { SetPasswordDto } from './dtos/set-password.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
@@ -43,6 +44,7 @@ export class UserController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new user' })
+  @Audit({ action: 'user.create', entity: 'User' })
   @ApiBody({ type: CreateUserDto })
   @ApiResponse({ status: 201, description: 'User created successfully' })
   @ApiResponse({
@@ -77,6 +79,7 @@ export class UserController {
 
   @Patch(':userId')
   @ApiOperation({ summary: 'Update a user' })
+  @Audit({ action: 'user.update', entity: 'User' })
   @ApiParam({ name: 'userId', type: String, format: 'uuid' })
   @ApiBody({ type: UpdateUserDto })
   @ApiResponse({ status: 200, description: 'User updated successfully' })
@@ -99,6 +102,13 @@ export class UserController {
 
   @Patch(':userId/password')
   @HttpCode(204)
+  @Audit({
+    action: 'user.set_password',
+    entity: 'User',
+    severity: 'warning',
+    // The handler returns nothing and the body is a credential.
+    captureAfter: false,
+  })
   @ApiOperation({ summary: "Set or reset a user's password" })
   @ApiParam({ name: 'userId', type: String, format: 'uuid' })
   @ApiBody({ type: SetPasswordDto })
