@@ -14,6 +14,10 @@ export class PrismaService implements OnModuleDestroy {
   constructor(private readonly clsService: ClsService) {
     this.pool = new Pool({
       connectionString: process.env.DATABASE_URL,
+      ssl:
+        process.env.DATABASE_SSL === 'true'
+          ? { rejectUnauthorized: false }
+          : undefined,
     });
 
     const adapter = new PrismaPg(this.pool);
