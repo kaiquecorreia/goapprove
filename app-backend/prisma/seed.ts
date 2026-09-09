@@ -14,6 +14,7 @@ async function main() {
         ? { rejectUnauthorized: false }
         : undefined,
   });
+  
   const adapter = new PrismaPg(pool);
   const prisma = new PrismaClient({ adapter });
 
