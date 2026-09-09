@@ -1,0 +1,14 @@
+@use '../styles/variables' as *;
+
+.actions {
+    display: flex;
+    justify-content: center;
+    gap: $spacing-md;
+    flex-wrap: wrap;
+
+    button {
+        border: none;
+        cursor: pointer;
+        font: inherit;
+    }
+}

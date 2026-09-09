@@ -1,6 +1,5 @@
-import { getAuthenticatedBackendToken } from '@/lib/backendAuth';
+import { getFromBackend } from '@/lib/backendClient';
 import type { ConflictStrategy, Rule, RuleOperator } from '@/lib/mock/types';
-import { internalApiClient } from './api';
 
 interface BackendRuleCondition {
   sourceType: 'PO_HEADER' | 'PO_LINE' | 'PO_ADDITIONAL' | 'MANUAL_FIELD';
@@ -72,12 +71,7 @@ function toFrontendRule(rule: BackendRule): Rule {
 }
 
 export async function getRules(companyId?: string): Promise<Rule[]> {
-  const token = await getAuthenticatedBackendToken();
-
-  const { data } = await internalApiClient.get<BackendRule[]>('/rules', {
-    params: companyId ? { companyId } : undefined,
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const data = await getFromBackend<BackendRule[]>('/rules', companyId ? { companyId } : undefined);
 
   return data.map(toFrontendRule);
 }

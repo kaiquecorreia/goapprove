@@ -1,5 +1,4 @@
-import { getAuthenticatedBackendToken } from '@/lib/backendAuth';
-import { internalApiClient } from './api';
+import { getFromBackend } from '@/lib/backendClient';
 import type {
   CompanyDistributionEntry,
   DashboardKpis,
@@ -65,16 +64,6 @@ function toMonthLabel(month: string): string {
   return withoutDot.charAt(0).toUpperCase() + withoutDot.slice(1);
 }
 
-async function get<T>(path: string, params: Record<string, string | number>): Promise<T> {
-  const token = await getAuthenticatedBackendToken();
-  const { data } = await internalApiClient.get<T>(path, {
-    params,
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  return data;
-}
-
 function toParams(query: DashboardQuery): Record<string, string> {
   return {
     dateFrom: query.dateFrom,
@@ -84,7 +73,7 @@ function toParams(query: DashboardQuery): Record<string, string> {
 }
 
 export async function getDashboardKpis(query: DashboardQuery): Promise<DashboardKpis> {
-  const raw = await get<RawKpis>('/dashboard/kpis', toParams(query));
+  const raw = await getFromBackend<RawKpis>('/dashboard/kpis', toParams(query));
 
   return { ...raw, totalAmount: Number(raw.totalAmount) };
 }
@@ -92,7 +81,7 @@ export async function getDashboardKpis(query: DashboardQuery): Promise<Dashboard
 export async function getMonthlyTrend(
   query: DashboardQuery & { months: number },
 ): Promise<MonthlyStat[]> {
-  const raw = await get<RawMonthlyTrendEntry[]>('/dashboard/monthly-trend', {
+  const raw = await getFromBackend<RawMonthlyTrendEntry[]>('/dashboard/monthly-trend', {
     ...toParams(query),
     months: String(query.months),
   });
@@ -108,17 +97,20 @@ export async function getMonthlyTrend(
 export async function getCompanyDistribution(
   query: DashboardQuery,
 ): Promise<CompanyDistributionEntry[]> {
-  const raw = await get<RawCompanyDistributionEntry[]>('/dashboard/company-distribution', {
-    ...toParams(query),
-    // One slice per chart color token (--chart-1..4).
-    limit: '4',
-  });
+  const raw = await getFromBackend<RawCompanyDistributionEntry[]>(
+    '/dashboard/company-distribution',
+    {
+      ...toParams(query),
+      // One slice per chart color token (--chart-1..4).
+      limit: '4',
+    },
+  );
 
   return raw.map((entry) => ({ name: entry.name, value: entry.count }));
 }
 
 export async function getRecentActivity(query: DashboardQuery): Promise<RecentActivityItem[]> {
-  const raw = await get<RawRecentActivityEntry[]>('/dashboard/recent-activity', {
+  const raw = await getFromBackend<RawRecentActivityEntry[]>('/dashboard/recent-activity', {
     ...toParams(query),
     limit: '6',
   });

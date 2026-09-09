@@ -174,6 +174,11 @@ export const baseAuthOptions: NextAuthOptions = {
   providers: [credentialsProvider],
   callbacks: baseCallbacks,
   pages: { signIn: '/login' },
+  // Backend JWTs expire in 12h (AppJwtModule) and are only minted once, at
+  // sign-in — bound the NextAuth session to the same window so the middleware
+  // bounces to /login on its own instead of pages crashing on a 401 from a
+  // session that's technically still "valid" but carries a dead backend token.
+  session: { maxAge: 60 * 60 * 12 },
   secret: process.env.NEXTAUTH_SECRET,
 };
 
