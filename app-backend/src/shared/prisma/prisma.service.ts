@@ -4,6 +4,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 
 import { ClsService } from './cls.service';
+import { isDatabaseSslEnabled } from './database-ssl';
 
 @Injectable()
 export class PrismaService implements OnModuleDestroy {
@@ -14,10 +15,7 @@ export class PrismaService implements OnModuleDestroy {
   constructor(private readonly clsService: ClsService) {
     this.pool = new Pool({
       connectionString: process.env.DATABASE_URL,
-      ssl:
-        process.env.DATABASE_SSL === 'true'
-          ? { rejectUnauthorized: false }
-          : undefined,
+      ssl: isDatabaseSslEnabled() ? { rejectUnauthorized: false } : undefined,
     });
 
     const adapter = new PrismaPg(this.pool);

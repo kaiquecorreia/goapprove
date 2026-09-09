@@ -6,6 +6,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { isDatabaseSslEnabled } from './shared/prisma/database-ssl';
 
 export async function bootstrap() {
   const server = express();
@@ -48,6 +49,7 @@ export async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
   console.log('Starting GoApprove API on port: ', process.env.PORT ?? 3012);
+  console.log('Database SSL enabled:', isDatabaseSslEnabled());
   await app.listen(process.env.PORT ?? 3012);
 }
 bootstrap()
