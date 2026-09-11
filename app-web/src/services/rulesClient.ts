@@ -1,4 +1,4 @@
-import type { ConflictStrategy, RuleOperator } from '@/lib/mock/types';
+import type { ConflictStrategy, RuleOperator, RuleType } from '@/lib/mock/types';
 
 export interface RuleConditionPayload {
   sourceType: 'PO_HEADER' | 'PO_LINE' | 'PO_ADDITIONAL';
@@ -23,6 +23,7 @@ export interface RulePayload {
   priority: number;
   validFrom: string;
   validTo?: string;
+  ruleType: RuleType;
   conflictStrategy: ConflictStrategy;
   conditions: RuleConditionPayload[];
   levels: RuleLevelPayload[];

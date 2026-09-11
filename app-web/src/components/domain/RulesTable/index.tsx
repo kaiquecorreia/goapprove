@@ -22,7 +22,12 @@ import {
   TableRow,
 } from '@/components/ui/Table';
 import { formatDate } from '@/lib/format/date';
-import { CONFLICT_STRATEGIES, RULE_FIELDS_BY_SOURCE, RULE_OPERATORS } from '@/lib/mock/rules';
+import {
+  CONFLICT_STRATEGIES,
+  RULE_FIELDS_BY_SOURCE,
+  RULE_OPERATORS,
+  RULE_TYPE_OPTIONS,
+} from '@/lib/mock/rules';
 import type { RuleCriterion } from '@/lib/mock/types';
 import { feedback } from '@/services/feedback';
 import { deactivateRule, setRuleStatus } from '@/services/rulesClient';
@@ -43,6 +48,9 @@ const fieldLabel = (criterion: RuleCriterion) => {
 
 const conflictStrategyLabel = (strategy: string) =>
   CONFLICT_STRATEGIES.find((option) => option.value === strategy)?.label ?? strategy;
+
+const ruleTypeLabel = (ruleType: string) =>
+  RULE_TYPE_OPTIONS.find((option) => option.value === ruleType)?.label ?? ruleType;
 
 export function RulesTable({
   rules,
@@ -97,6 +105,7 @@ export function RulesTable({
             <TableHead align="right">Prioridade</TableHead>
             <TableHead>Vigência</TableHead>
             <TableHead>Critérios</TableHead>
+            <TableHead>Tipo</TableHead>
             <TableHead>Estratégia</TableHead>
             <TableHead>Status</TableHead>
             <TableHead align="right">Ações</TableHead>
@@ -121,6 +130,11 @@ export function RulesTable({
                     </Badge>
                   ))}
                 </div>
+              </TableCell>
+              <TableCell>
+                <Badge variant={rule.ruleType === 'AUTO_APPROVE' ? 'warning' : 'secondary'}>
+                  {ruleTypeLabel(rule.ruleType)}
+                </Badge>
               </TableCell>
               <TableCell>{conflictStrategyLabel(rule.conflictStrategy)}</TableCell>
               <TableCell>

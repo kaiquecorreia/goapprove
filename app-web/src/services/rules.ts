@@ -1,5 +1,5 @@
 import { getFromBackend } from '@/lib/backendClient';
-import type { ConflictStrategy, Rule, RuleOperator } from '@/lib/mock/types';
+import type { ConflictStrategy, Rule, RuleOperator, RuleType } from '@/lib/mock/types';
 
 interface BackendRuleCondition {
   sourceType: 'PO_HEADER' | 'PO_LINE' | 'PO_ADDITIONAL' | 'MANUAL_FIELD';
@@ -31,6 +31,7 @@ interface BackendRule {
   validFrom: string;
   validTo: string | null;
   status: 'ACTIVE' | 'INACTIVE';
+  ruleType: RuleType;
   conflictStrategy: ConflictStrategy;
   conditions: BackendRuleCondition[];
   levels: BackendRuleLevel[];
@@ -46,6 +47,7 @@ function toFrontendRule(rule: BackendRule): Rule {
     priority: rule.priority,
     validFrom: rule.validFrom,
     validTo: rule.validTo ?? undefined,
+    ruleType: rule.ruleType,
     conflictStrategy: rule.conflictStrategy,
     status: rule.status === 'ACTIVE' ? 'Ativa' : 'Inativa',
     criteria: rule.conditions.map((condition) => ({

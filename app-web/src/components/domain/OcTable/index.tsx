@@ -14,18 +14,20 @@ import {
 } from '@/components/ui/Table';
 import { StatusBadge } from '@/components/domain/StatusBadge';
 import { formatCurrency } from '@/lib/format/currency';
-import type { OcTableRow } from '@/lib/mock/types';
+import { formatDate } from '@/lib/format/date';
+import type { PendingPurchaseOrder } from '@/lib/mock/types';
 import styles from './styles.module.scss';
 
 interface OcTableProps {
-  orders: OcTableRow[];
+  orders: PendingPurchaseOrder[];
   showSelection?: boolean;
   showQuickActions?: boolean;
   selected?: string[];
   onToggleSelect?: (id: string) => void;
   onToggleSelectAll?: () => void;
-  onApprove?: (order: OcTableRow) => void;
-  onReject?: (order: OcTableRow) => void;
+  onApprove?: (order: PendingPurchaseOrder) => void;
+  onReject?: (order: PendingPurchaseOrder) => void;
+  approvingId?: string | null;
 }
 
 export function OcTable({
@@ -37,6 +39,7 @@ export function OcTable({
   onToggleSelectAll,
   onApprove,
   onReject,
+  approvingId = null,
 }: OcTableProps) {
   const allSelected = orders.length > 0 && selected.length === orders.length;
   const someSelected = selected.length > 0 && !allSelected;
@@ -59,6 +62,7 @@ export function OcTable({
           <TableHead>Fornecedor</TableHead>
           <TableHead>Solicitante</TableHead>
           <TableHead align="right">Valor</TableHead>
+          <TableHead>Recebida em</TableHead>
           <TableHead>Status</TableHead>
           <TableHead align="right">Ações</TableHead>
         </TableRow>
@@ -79,6 +83,7 @@ export function OcTable({
             <TableCell>{order.supplier}</TableCell>
             <TableCell>{order.requester}</TableCell>
             <TableCell align="right">{formatCurrency(order.total)}</TableCell>
+            <TableCell>{formatDate(order.erpCreatedAt)}</TableCell>
             <TableCell>
               <StatusBadge status={order.status} />
             </TableCell>
@@ -96,6 +101,7 @@ export function OcTable({
                       size="icon"
                       aria-label="Aprovar"
                       onClick={() => onApprove?.(order)}
+                      isLoading={approvingId === order.id}
                     >
                       <Check size={16} />
                     </Button>
@@ -104,6 +110,7 @@ export function OcTable({
                       size="icon"
                       aria-label="Rejeitar"
                       onClick={() => onReject?.(order)}
+                      disabled={approvingId === order.id}
                     >
                       <X size={16} />
                     </Button>

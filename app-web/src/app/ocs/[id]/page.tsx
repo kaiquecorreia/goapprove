@@ -31,6 +31,7 @@ export default function OcDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rejectOpen, setRejectOpen] = useState(false);
+  const [approving, setApproving] = useState(false);
 
   const fetchOrder = useCallback(async () => {
     setLoading(true);
@@ -53,12 +54,14 @@ export default function OcDetailPage() {
   const handleApprove = async () => {
     if (!order) return;
 
+    setApproving(true);
     try {
       await postDecision(order.id, { decision: 'APPROVED' });
       feedback.success(`OC ${order.number} aprovada.`);
     } catch (err) {
       feedback.error(err instanceof Error ? err.message : `Erro ao aprovar OC ${order.number}.`);
     } finally {
+      setApproving(false);
       fetchOrder();
     }
   };
@@ -112,10 +115,15 @@ export default function OcDetailPage() {
                   variant="outline"
                   leftIcon={<X size={16} />}
                   onClick={() => setRejectOpen(true)}
+                  disabled={approving}
                 >
                   Rejeitar
                 </Button>
-                <Button leftIcon={<Check size={16} />} onClick={handleApprove}>
+                <Button
+                  leftIcon={<Check size={16} />}
+                  onClick={handleApprove}
+                  isLoading={approving}
+                >
                   Aprovar
                 </Button>
               </>
@@ -195,7 +203,10 @@ export default function OcDetailPage() {
             </div>
 
             <div className={styles.sidebar}>
-              <AppliedRuleCard ruleName={order.appliedRule} />
+              <AppliedRuleCard
+                ruleName={order.appliedRule}
+                autoApproved={order.status === 'approved' && order.workflow.length === 0}
+              />
 
               <Card>
                 <CardHeader>

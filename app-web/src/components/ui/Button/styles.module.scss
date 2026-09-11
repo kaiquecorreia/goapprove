@@ -1,5 +1,6 @@
 @use '../../../styles/variables' as *;
 @use '../../../styles/mixins' as *;
+@use '../../../styles/animations' as *;
 
 .button {
   @include center-flex;
@@ -20,6 +21,10 @@
 
 .icon {
   @include center-flex;
+}
+
+.spinner {
+  animation: spin 0.8s linear infinite;
 }
 
 .md {

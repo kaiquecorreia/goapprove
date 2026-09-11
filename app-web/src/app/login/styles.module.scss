@@ -155,9 +155,14 @@
     cursor: pointer;
     transition: background-color 0.2s;
 
-    &:hover {
+    &:hover:not(:disabled) {
         background-color: var(--color-brand-primary-hover);
         color: var(--color-text-inverse);
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
     }
 }
 

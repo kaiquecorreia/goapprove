@@ -74,6 +74,11 @@ export const RULE_OPERATORS = [
   { label: 'Não existe', value: 'NOT_EXISTS' },
 ];
 
+export const RULE_TYPE_OPTIONS = [
+  { label: 'Aprovação manual', value: 'STANDARD' },
+  { label: 'Auto-aprovação', value: 'AUTO_APPROVE' },
+];
+
 export const CONFLICT_STRATEGIES = [
   { label: 'Maior prioridade', value: 'HIGHEST_PRIORITY' },
   { label: 'Mais restritiva', value: 'MOST_RESTRICTIVE' },

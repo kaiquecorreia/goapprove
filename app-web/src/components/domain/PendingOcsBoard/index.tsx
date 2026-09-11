@@ -16,7 +16,7 @@ import { getPendingPurchaseOrders } from '@/services/pendingPurchaseOrdersClient
 import { postDecision } from '@/services/workflowDecisionsClient';
 import { feedback } from '@/services/feedback';
 import { EUserRole } from '@/config/navigation';
-import type { Company, OcTableRow, PendingPurchaseOrdersPage } from '@/lib/mock/types';
+import type { Company, PendingPurchaseOrder, PendingPurchaseOrdersPage } from '@/lib/mock/types';
 import styles from './styles.module.scss';
 
 const PAGE_SIZE = 20;
@@ -40,7 +40,9 @@ export function PendingOcsBoard({ companies }: PendingOcsBoardProps) {
   const [data, setData] = useState<PendingPurchaseOrdersPage>(EMPTY_PAGE);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string[]>([]);
-  const [rejectTarget, setRejectTarget] = useState<OcTableRow | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<PendingPurchaseOrder | null>(null);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [bulkApproving, setBulkApproving] = useState(false);
   const requestIdRef = useRef(0);
 
   useEffect(() => {
@@ -96,7 +98,8 @@ export function PendingOcsBoard({ companies }: PendingOcsBoardProps) {
     );
   };
 
-  const handleApprove = async (order: OcTableRow) => {
+  const handleApprove = async (order: PendingPurchaseOrder) => {
+    setApprovingId(order.id);
     try {
       await postDecision(order.id, { decision: 'APPROVED' });
       feedback.success(`OC ${order.number} aprovada.`);
@@ -105,11 +108,12 @@ export function PendingOcsBoard({ companies }: PendingOcsBoardProps) {
         error instanceof Error ? error.message : `Erro ao aprovar OC ${order.number}.`,
       );
     } finally {
+      setApprovingId(null);
       fetchPending();
     }
   };
 
-  const handleReject = (order: OcTableRow) => {
+  const handleReject = (order: PendingPurchaseOrder) => {
     setRejectTarget(order);
   };
 
@@ -131,17 +135,22 @@ export function PendingOcsBoard({ companies }: PendingOcsBoardProps) {
 
   const handleBulkApprove = async () => {
     const ids = selected;
-    const results = await Promise.allSettled(
-      ids.map((id) => postDecision(id, { decision: 'APPROVED' })),
-    );
-    const succeeded = results.filter((result) => result.status === 'fulfilled').length;
-    const failed = results.length - succeeded;
+    setBulkApproving(true);
+    try {
+      const results = await Promise.allSettled(
+        ids.map((id) => postDecision(id, { decision: 'APPROVED' })),
+      );
+      const succeeded = results.filter((result) => result.status === 'fulfilled').length;
+      const failed = results.length - succeeded;
 
-    if (succeeded > 0) feedback.success(`${succeeded} OC(s) aprovada(s).`);
-    if (failed > 0) feedback.error(`${failed} OC(s) não puderam ser aprovadas.`);
+      if (succeeded > 0) feedback.success(`${succeeded} OC(s) aprovada(s).`);
+      if (failed > 0) feedback.error(`${failed} OC(s) não puderam ser aprovadas.`);
 
-    setSelected([]);
-    fetchPending();
+      setSelected([]);
+      fetchPending();
+    } finally {
+      setBulkApproving(false);
+    }
   };
 
   const companyOptions = companies.map((company) => ({
@@ -158,7 +167,11 @@ export function PendingOcsBoard({ companies }: PendingOcsBoardProps) {
           <>
             <RefreshButton onRefresh={fetchPending} isLoading={loading} />
             {selected.length > 0 && (
-              <Button leftIcon={<Check size={16} />} onClick={handleBulkApprove}>
+              <Button
+                leftIcon={<Check size={16} />}
+                onClick={handleBulkApprove}
+                isLoading={bulkApproving}
+              >
                 Aprovar selecionadas ({selected.length})
               </Button>
             )}
@@ -194,6 +207,7 @@ export function PendingOcsBoard({ companies }: PendingOcsBoardProps) {
                 onToggleSelectAll={toggleSelectAll}
                 onApprove={handleApprove}
                 onReject={handleReject}
+                approvingId={approvingId}
               />
               <Pagination
                 page={data.page}

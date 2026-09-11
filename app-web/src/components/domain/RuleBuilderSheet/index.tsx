@@ -23,7 +23,7 @@ import { CriteriaBuilder } from '@/components/domain/CriteriaBuilder';
 import { ApprovalLevelsBuilder } from '@/components/domain/ApprovalLevelsBuilder';
 import { feedback } from '@/services/feedback';
 import { createRule, updateRule, type RuleConditionPayload } from '@/services/rulesClient';
-import { CONFLICT_STRATEGIES } from '@/lib/mock/rules';
+import { CONFLICT_STRATEGIES, RULE_TYPE_OPTIONS } from '@/lib/mock/rules';
 import { ruleSchema, type RuleFormData } from '@/app/rules/schema';
 import type { Company, Rule, User } from '@/lib/mock/types';
 
@@ -44,6 +44,7 @@ function buildDefaultValues(rule?: Rule): RuleFormData {
       priority: 10,
       validFrom: new Date().toISOString().slice(0, 10),
       validTo: '',
+      ruleType: 'STANDARD',
       conflictStrategy: 'HIGHEST_PRIORITY',
       criteria: [{ sourceType: 'PO_HEADER', field: '', operator: 'EQUALS', value: '' }],
       levels: [{ mode: 'ANY', approverUserIds: [] }],
@@ -58,6 +59,7 @@ function buildDefaultValues(rule?: Rule): RuleFormData {
     priority: rule.priority,
     validFrom: rule.validFrom.slice(0, 10),
     validTo: rule.validTo ? rule.validTo.slice(0, 10) : '',
+    ruleType: rule.ruleType,
     conflictStrategy: rule.conflictStrategy,
     criteria: rule.criteria.map((criterion) => ({
       sourceType: criterion.sourceType,
@@ -83,17 +85,27 @@ export function RuleBuilderSheet({ trigger, companies, users, rule }: RuleBuilde
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<RuleFormData>({
     resolver: zodResolver(ruleSchema),
     defaultValues: buildDefaultValues(rule),
   });
 
+  const ruleType = watch('ruleType');
+  const isAutoApprove = ruleType === 'AUTO_APPROVE';
+
   useEffect(() => {
     if (open) {
       reset(buildDefaultValues(rule));
     }
   }, [open, rule, reset]);
+
+  useEffect(() => {
+    if (isAutoApprove) {
+      setValue('levels', []);
+    }
+  }, [isAutoApprove, setValue]);
 
   const onSubmit = async (data: RuleFormData) => {
     const conditions: RuleConditionPayload[] = data.criteria.map((criterion) => ({
@@ -118,6 +130,7 @@ export function RuleBuilderSheet({ trigger, companies, users, rule }: RuleBuilde
       priority: data.priority,
       validFrom: data.validFrom,
       validTo: data.validTo || undefined,
+      ruleType: data.ruleType,
       conflictStrategy: data.conflictStrategy,
       conditions,
       levels: data.levels.map((level, index) => ({
@@ -219,13 +232,19 @@ export function RuleBuilderSheet({ trigger, companies, users, rule }: RuleBuilde
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="conflictStrategy">Estratégia de conflito</Label>
-            <Select
-              id="conflictStrategy"
-              options={CONFLICT_STRATEGIES}
-              {...register('conflictStrategy')}
-            />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div>
+              <Label htmlFor="ruleType">Tipo de regra</Label>
+              <Select id="ruleType" options={RULE_TYPE_OPTIONS} {...register('ruleType')} />
+            </div>
+            <div>
+              <Label htmlFor="conflictStrategy">Estratégia de conflito</Label>
+              <Select
+                id="conflictStrategy"
+                options={CONFLICT_STRATEGIES}
+                {...register('conflictStrategy')}
+              />
+            </div>
           </div>
 
           <Separator />
@@ -242,15 +261,25 @@ export function RuleBuilderSheet({ trigger, companies, users, rule }: RuleBuilde
 
           <Separator />
 
-          <div>
-            <Label>Níveis de aprovação</Label>
-            <ApprovalLevelsBuilder control={control} register={register} users={users} />
-            {errors.levels?.message && (
-              <span style={{ color: 'var(--color-error)', fontSize: '0.8rem' }}>
-                {errors.levels.message}
-              </span>
-            )}
-          </div>
+          {isAutoApprove ? (
+            <div>
+              <Label>Níveis de aprovação</Label>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
+                Pedidos que casarem com esta regra serão aprovados automaticamente, sem aprovador
+                humano.
+              </p>
+            </div>
+          ) : (
+            <div>
+              <Label>Níveis de aprovação</Label>
+              <ApprovalLevelsBuilder control={control} register={register} users={users} />
+              {errors.levels?.message && (
+                <span style={{ color: 'var(--color-error)', fontSize: '0.8rem' }}>
+                  {errors.levels.message}
+                </span>
+              )}
+            </div>
+          )}
 
           <SheetFooter>
             <Button type="submit" isLoading={isSubmitting}>

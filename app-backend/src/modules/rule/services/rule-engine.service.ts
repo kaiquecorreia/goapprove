@@ -39,7 +39,11 @@ export class RuleEngineService {
         : this.conflictResolver.resolve(matched);
     const conflictedWith = matched
       .filter((rule) => rule.ruleId !== winner.ruleId)
-      .map((rule) => ({ ruleId: rule.ruleId, code: rule.code, name: rule.name }));
+      .map((rule) => ({
+        ruleId: rule.ruleId,
+        code: rule.code,
+        name: rule.name,
+      }));
 
     return {
       rule: {

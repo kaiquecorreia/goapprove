@@ -84,12 +84,45 @@ function toWorkflowLevels(levels: RawLevel[]): ApprovalLevel[] {
   }));
 }
 
+function formatEventDetail(metadata: Record<string, unknown> | null): string | undefined {
+  if (!metadata) {
+    return undefined;
+  }
+
+  const conflictedWith = metadata.conflictedWith;
+
+  if (Array.isArray(conflictedWith) && conflictedWith.length > 0) {
+    const names = conflictedWith
+      .map((entry) =>
+        typeof entry === 'object' && entry !== null && 'name' in entry
+          ? String((entry as { name: unknown }).name)
+          : null,
+      )
+      .filter((name): name is string => Boolean(name));
+
+    if (names.length === conflictedWith.length) {
+      return `Conflitou com: ${names.join(', ')}.`;
+    }
+
+    const count = conflictedWith.length;
+    return count === 1 ? 'Conflitou com 1 outra regra.' : `Conflitou com ${count} outras regras.`;
+  }
+
+  const assignedUserName = metadata.assignedUserName;
+
+  if (typeof assignedUserName === 'string' && assignedUserName.trim()) {
+    return `Decisão registrada por ${assignedUserName}.`;
+  }
+
+  return undefined;
+}
+
 function toTimeline(auditEvents: RawAuditEvent[]): TimelineEvent[] {
   return auditEvents.map((event) => ({
     at: event.createdAt,
     label: event.message ?? '—',
     type: event.severity as TimelineEvent['type'],
-    detail: event.metadata ? JSON.stringify(event.metadata) : undefined,
+    detail: formatEventDetail(event.metadata),
   }));
 }
 

@@ -1,4 +1,5 @@
 import { ButtonHTMLAttributes, ReactNode } from 'react';
+import { Loader2 } from 'lucide-react';
 import { cx } from '@/lib/cx';
 import styles from './styles.module.scss';
 
@@ -30,9 +31,15 @@ export function Button({
       disabled={disabled || isLoading}
       {...rest}
     >
-      {leftIcon && <span className={styles.icon}>{leftIcon}</span>}
-      {children}
-      {rightIcon && <span className={styles.icon}>{rightIcon}</span>}
+      {isLoading ? (
+        <Loader2 size={16} className={styles.spinner} />
+      ) : (
+        <>
+          {leftIcon && <span className={styles.icon}>{leftIcon}</span>}
+          {children}
+          {rightIcon && <span className={styles.icon}>{rightIcon}</span>}
+        </>
+      )}
     </button>
   );
 }

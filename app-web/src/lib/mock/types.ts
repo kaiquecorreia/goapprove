@@ -181,6 +181,8 @@ export interface RuleLevel {
 
 export type ConflictStrategy = 'HIGHEST_PRIORITY' | 'MOST_RESTRICTIVE' | 'FIRST_MATCH';
 
+export type RuleType = 'STANDARD' | 'AUTO_APPROVE';
+
 export interface Rule {
   id: string;
   code: string;
@@ -190,6 +192,7 @@ export interface Rule {
   priority: number;
   validFrom: string;
   validTo?: string;
+  ruleType: RuleType;
   criteria: RuleCriterion[];
   levels: RuleLevel[];
   conflictStrategy: ConflictStrategy;

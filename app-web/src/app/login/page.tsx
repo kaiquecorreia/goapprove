@@ -43,7 +43,7 @@ function LoginContent() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -110,8 +110,8 @@ function LoginContent() {
               <span className={styles.errorMessage}>{errors.password.message}</span>
             )}
           </div>
-          <button type="submit" className={styles.loginButton}>
-            Entrar
+          <button type="submit" className={styles.loginButton} disabled={isSubmitting}>
+            {isSubmitting ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
       </div>

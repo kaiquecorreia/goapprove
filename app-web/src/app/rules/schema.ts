@@ -21,6 +21,7 @@ export const CONFLICT_STRATEGY_OPTIONS = [
   'MOST_RESTRICTIVE',
   'FIRST_MATCH',
 ] as const;
+export const RULE_TYPES = ['STANDARD', 'AUTO_APPROVE'] as const;
 
 const NO_VALUE_OPERATORS = new Set(['EXISTS', 'NOT_EXISTS', 'BETWEEN', 'IN_LIST', 'NOT_IN_LIST']);
 
@@ -50,17 +51,39 @@ export const levelSchema = z.object({
   approverUserIds: z.array(z.string()).min(1, 'Selecione ao menos um aprovador'),
 });
 
-export const ruleSchema = z.object({
-  code: z.string().min(1, 'Informe o código da regra'),
-  name: z.string().min(3, 'Informe o nome da regra'),
-  description: z.string().optional(),
-  companyId: z.string().min(1, 'Selecione a empresa'),
-  priority: z.coerce.number().min(1, 'Informe uma prioridade'),
-  validFrom: z.string().min(1, 'Informe a data de início'),
-  validTo: z.string().optional(),
-  conflictStrategy: z.enum(CONFLICT_STRATEGY_OPTIONS),
-  criteria: z.array(criterionSchema).min(1, 'Adicione ao menos um critério'),
-  levels: z.array(levelSchema).min(1, 'Adicione ao menos um nível de aprovação'),
-});
+export const ruleSchema = z
+  .object({
+    code: z.string().min(1, 'Informe o código da regra'),
+    name: z.string().min(3, 'Informe o nome da regra'),
+    description: z.string().optional(),
+    companyId: z.string().min(1, 'Selecione a empresa'),
+    priority: z.coerce.number().min(1, 'Informe uma prioridade'),
+    validFrom: z.string().min(1, 'Informe a data de início'),
+    validTo: z.string().optional(),
+    ruleType: z.enum(RULE_TYPES),
+    conflictStrategy: z.enum(CONFLICT_STRATEGY_OPTIONS),
+    criteria: z.array(criterionSchema).min(1, 'Adicione ao menos um critério'),
+    levels: z.array(levelSchema),
+  })
+  .superRefine((data, ctx) => {
+    if (data.ruleType === 'AUTO_APPROVE') {
+      if (data.levels.length > 0) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['levels'],
+          message: 'Regras de auto-aprovação não podem ter níveis de aprovação',
+        });
+      }
+      return;
+    }
+
+    if (data.levels.length === 0) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['levels'],
+        message: 'Adicione ao menos um nível de aprovação',
+      });
+    }
+  });
 
 export type RuleFormData = z.infer<typeof ruleSchema>;
