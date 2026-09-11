@@ -65,7 +65,7 @@ export class WorkflowService {
           entityId: purchaseOrderId,
           severity: 'warning',
           message:
-            'No active rule matched this purchase order; manual assignment required.',
+            'Nenhuma regra ativa correspondeu a esta OC; atribuição manual necessária.',
           metadata: { workflowId: workflow.workflowId },
         });
 
@@ -98,7 +98,7 @@ export class WorkflowService {
         entity: 'PurchaseOrder',
         entityId: purchaseOrderId,
         severity: 'info',
-        message: `Rule "${ruleMatch.rule.name}" (${ruleMatch.rule.code}) matched and applied.`,
+        message: `Regra "${ruleMatch.rule.name}" (${ruleMatch.rule.code}) correspondida e aplicada.`,
         metadata: {
           workflowId: workflow.workflowId,
           ruleId: ruleMatch.rule.ruleId,
@@ -143,7 +143,7 @@ export class WorkflowService {
       entity: 'PurchaseOrder',
       entityId: purchaseOrderId,
       severity: 'success',
-      message: `Rule "${ruleMatch.rule.name}" (${ruleMatch.rule.code}) auto-approved this purchase order without human review.`,
+      message: `Regra "${ruleMatch.rule.name}" (${ruleMatch.rule.code}) aprovou automaticamente esta OC, sem revisão humana.`,
       metadata: {
         workflowId: workflow.workflowId,
         ruleId: ruleMatch.rule.ruleId,
@@ -364,16 +364,21 @@ export class WorkflowService {
         now,
       );
 
+      const decidedApprover = currentLevel.approvers.find(
+        (approver) => approver.userId === assignedUserId,
+      );
+
       this.auditService.log({
         action: 'workflow.decision_recorded',
         entity: 'PurchaseOrder',
         entityId: workflow.purchaseOrderId,
         companyId: workflow.purchaseOrder.companyId,
         severity: input.decision === 'APPROVED' ? 'success' : 'warning',
-        message: `${input.decision} recorded on level ${currentLevel.level}`,
+        message: `${input.decision === 'APPROVED' ? 'Aprovação' : 'Rejeição'} registrada no nível ${currentLevel.level}`,
         metadata: {
           workflowId: workflow.workflowId,
           assignedUserId,
+          assignedUserName: decidedApprover?.user.name,
           levelId: currentLevel.levelId,
         },
         // Compliance-critical: must be durable before the response returns.
@@ -385,9 +390,6 @@ export class WorkflowService {
         return true;
       }
 
-      const decidedApprover = currentLevel.approvers.find(
-        (approver) => approver.userId === assignedUserId,
-      );
       const updatedApprovers = currentLevel.approvers.map((approver) =>
         approver.userId === assignedUserId
           ? { ...approver, status: approverStatus, decidedAt: now }
@@ -418,7 +420,7 @@ export class WorkflowService {
             entityId: workflow.purchaseOrderId,
             companyId: workflow.purchaseOrder.companyId,
             severity: 'info',
-            message: `Level ${nextLevel.level} unlocked`,
+            message: `Nível ${nextLevel.level} liberado`,
             metadata: {
               workflowId: workflow.workflowId,
               levelId: nextLevel.levelId,
@@ -502,7 +504,7 @@ export class WorkflowService {
       entityId: workflow.purchaseOrderId,
       companyId: workflow.purchaseOrder.companyId,
       severity: outcome === 'APPROVED' ? 'success' : 'error',
-      message: `Workflow finalized as ${outcome}`,
+      message: `Fluxo de aprovação finalizado como ${outcome === 'APPROVED' ? 'aprovado' : 'rejeitado'}`,
       metadata: { workflowId: workflow.workflowId },
       critical: true,
     });

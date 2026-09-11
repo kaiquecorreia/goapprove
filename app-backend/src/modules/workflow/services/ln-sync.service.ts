@@ -37,7 +37,7 @@ export class LnSyncService {
     if (!integration || !integration.active) {
       await this.markFailed(
         workflow,
-        'No active LN integration configured for company',
+        'Nenhuma integração ativa com o LN configurada para a empresa',
       );
       return;
     }
@@ -64,14 +64,14 @@ export class LnSyncService {
         entityId: workflow.purchaseOrderId,
         companyId: workflow.purchaseOrder.companyId,
         severity: 'success',
-        message: 'Approval result sent to LN successfully.',
+        message: 'Resultado da aprovação enviado ao LN com sucesso.',
         metadata: { workflowId: workflow.workflowId },
       });
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
-          : 'Unknown error sending result to LN';
+          : 'Erro desconhecido ao enviar resultado ao LN';
 
       await this.markFailed(workflow, message);
     }

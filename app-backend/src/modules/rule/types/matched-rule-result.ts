@@ -15,5 +15,11 @@ export interface MatchedRuleResult {
   };
   levels: MatchedRuleLevel[];
   matchedAt: Date;
-  conflictedWith?: string[];
+  conflictedWith?: ConflictedRule[];
+}
+
+export interface ConflictedRule {
+  ruleId: string;
+  code: string;
+  name: string;
 }
