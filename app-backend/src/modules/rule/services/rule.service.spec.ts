@@ -33,6 +33,7 @@ function buildRule(
     validFrom: new Date(),
     validTo: null,
     status: 'ACTIVE',
+    ruleType: 'STANDARD',
     conflictStrategy: 'MOST_RESTRICTIVE',
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -108,6 +109,67 @@ describe('RuleService', () => {
       ).rejects.toThrow('You do not have access to this resource');
       expect(ruleRepository.create).not.toHaveBeenCalled();
     });
+
+    it('rejeita regra AUTO_APPROVE com níveis informados', async () => {
+      await expect(
+        service.create(
+          {
+            code: 'R-AUTO',
+            name: 'Auto rule',
+            companyId: 'company-A',
+            priority: 1,
+            validFrom: new Date().toISOString(),
+            conflictStrategy: 'MOST_RESTRICTIVE',
+            ruleType: 'AUTO_APPROVE',
+            conditions: [],
+            levels: [{ levelNumber: 1, mode: 'ANY', approverUserIds: ['u1'] }],
+          },
+          OWNER_A,
+        ),
+      ).rejects.toThrow('AUTO_APPROVE rules cannot have approval levels');
+      expect(ruleRepository.create).not.toHaveBeenCalled();
+    });
+
+    it('rejeita regra STANDARD (ou sem ruleType) sem nenhum nível', async () => {
+      await expect(
+        service.create(
+          {
+            code: 'R-STD',
+            name: 'Standard rule',
+            companyId: 'company-A',
+            priority: 1,
+            validFrom: new Date().toISOString(),
+            conflictStrategy: 'MOST_RESTRICTIVE',
+            conditions: [],
+            levels: [],
+          },
+          OWNER_A,
+        ),
+      ).rejects.toThrow('STANDARD rules require at least one approval level');
+      expect(ruleRepository.create).not.toHaveBeenCalled();
+    });
+
+    it('aceita regra AUTO_APPROVE sem níveis e pula a validação de aprovadores', async () => {
+      ruleRepository.create.mockResolvedValue(buildRule({ ruleType: 'AUTO_APPROVE' }));
+
+      await service.create(
+        {
+          code: 'R-AUTO',
+          name: 'Auto rule',
+          companyId: 'company-A',
+          priority: 1,
+          validFrom: new Date().toISOString(),
+          conflictStrategy: 'MOST_RESTRICTIVE',
+          ruleType: 'AUTO_APPROVE',
+          conditions: [],
+          levels: [],
+        },
+        OWNER_A,
+      );
+
+      expect(ruleRepository.create).toHaveBeenCalled();
+      expect(companyUserRepository.findByCompanyId).not.toHaveBeenCalled();
+    });
   });
 
   describe('findById', () => {
@@ -177,6 +239,28 @@ describe('RuleService', () => {
       await expect(
         service.update('rule-1', { companyId: 'company-B' }, OWNER_A),
       ).rejects.toThrow('You do not have access to this resource');
+      expect(ruleRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('rejeita mudar para AUTO_APPROVE mantendo os níveis existentes', async () => {
+      ruleRepository.findById.mockResolvedValue(
+        buildRule({
+          levels: [
+            {
+              ruleLevelId: 'level-1',
+              ruleId: 'rule-1',
+              levelNumber: 1,
+              mode: 'ANY',
+              createdAt: new Date(),
+              approvers: [],
+            },
+          ],
+        }),
+      );
+
+      await expect(
+        service.update('rule-1', { ruleType: 'AUTO_APPROVE' }, OWNER_A),
+      ).rejects.toThrow('AUTO_APPROVE rules cannot have approval levels');
       expect(ruleRepository.update).not.toHaveBeenCalled();
     });
   });

@@ -1,4 +1,4 @@
-import { ApprovalMode } from '@prisma/client';
+import { ApprovalMode, RuleType } from '@prisma/client';
 
 export interface MatchedRuleLevel {
   levelNumber: number;
@@ -11,6 +11,7 @@ export interface MatchedRuleResult {
     ruleId: string;
     code: string;
     name: string;
+    ruleType: RuleType;
   };
   levels: MatchedRuleLevel[];
   matchedAt: Date;

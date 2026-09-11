@@ -46,6 +46,7 @@ export class InMemoryRuleRepository implements RuleRepository {
       validFrom: new Date(data.validFrom),
       validTo: data.validTo ? new Date(data.validTo) : null,
       status: data.status ?? 'ACTIVE',
+      ruleType: data.ruleType ?? 'STANDARD',
       conflictStrategy: data.conflictStrategy,
       createdAt: now,
       updatedAt: now,
@@ -169,6 +170,7 @@ export class InMemoryRuleRepository implements RuleRepository {
             : null
           : existing.validTo,
       status: data.status ?? existing.status,
+      ruleType: data.ruleType ?? existing.ruleType,
       conflictStrategy: data.conflictStrategy ?? existing.conflictStrategy,
       updatedAt: now,
       conditions: data.conditions

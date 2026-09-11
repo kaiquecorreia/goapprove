@@ -43,7 +43,11 @@ export class WorkflowService {
     purchaseOrderId: string,
     ruleMatch: MatchedRuleResult | null,
   ): Promise<WorkflowWithRelations> {
-    return this.transactionService.run(async () => {
+    const workflow = await this.transactionService.run(async () => {
+      if (ruleMatch?.rule.ruleType === 'AUTO_APPROVE') {
+        return this.startAutoApprovedWorkflow(purchaseOrderId, ruleMatch);
+      }
+
       if (!ruleMatch) {
         const workflow = await this.workflowRepository.create({
           purchaseOrderId,
@@ -104,6 +108,56 @@ export class WorkflowService {
 
       return workflow;
     });
+
+    if (workflow.status === 'APPROVED') {
+      await this.lnSyncService.sendResult(workflow.workflowId);
+      return this.fetchByPurchaseOrderId(purchaseOrderId);
+    }
+
+    return workflow;
+  }
+
+  private async startAutoApprovedWorkflow(
+    purchaseOrderId: string,
+    ruleMatch: MatchedRuleResult,
+  ): Promise<WorkflowWithRelations> {
+    const now = new Date();
+
+    const workflow = await this.workflowRepository.create({
+      purchaseOrderId,
+      ruleId: ruleMatch.rule.ruleId,
+      status: 'APPROVED',
+      currentLevel: null,
+      requireCommentOnApprove: false,
+      requireCommentOnReject: true,
+      levels: [],
+    });
+
+    await this.workflowRepository.updateWorkflow(workflow.workflowId, {
+      finalizedAt: now,
+      lnSyncStatus: 'PENDING',
+    });
+
+    this.auditService.log({
+      action: 'workflow.auto_approved_by_rule',
+      entity: 'PurchaseOrder',
+      entityId: purchaseOrderId,
+      severity: 'success',
+      message: `Rule "${ruleMatch.rule.name}" (${ruleMatch.rule.code}) auto-approved this purchase order without human review.`,
+      metadata: {
+        workflowId: workflow.workflowId,
+        ruleId: ruleMatch.rule.ruleId,
+        conflictedWith: ruleMatch.conflictedWith,
+      },
+      critical: true,
+    });
+
+    await this.workflowRepository.updatePurchaseOrderStatus(
+      purchaseOrderId,
+      'APPROVED',
+    );
+
+    return workflow;
   }
 
   // Raw lookup, no authorization — reused internally by recordDecision (already

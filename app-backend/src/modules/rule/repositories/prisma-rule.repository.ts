@@ -34,6 +34,7 @@ export class PrismaRuleRepository implements RuleRepository {
         validFrom: new Date(data.validFrom),
         validTo: data.validTo ? new Date(data.validTo) : null,
         status: data.status,
+        ruleType: data.ruleType,
         conflictStrategy: data.conflictStrategy,
         conditions: {
           create: data.conditions.map((condition) =>
@@ -131,6 +132,7 @@ export class PrismaRuleRepository implements RuleRepository {
               : null
             : undefined,
         status: data.status,
+        ruleType: data.ruleType,
         conflictStrategy: data.conflictStrategy,
         conditions: data.conditions
           ? {

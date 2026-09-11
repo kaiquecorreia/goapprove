@@ -14,7 +14,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { RuleConflictStrategy, RuleStatus } from '@prisma/client';
+import { RuleConflictStrategy, RuleStatus, RuleType } from '@prisma/client';
 
 import { RuleConditionDto } from './rule-condition.dto';
 import { RuleLevelDto } from './rule-level.dto';
@@ -67,6 +67,15 @@ export class CreateRuleDto {
   @IsEnum(RuleStatus)
   status?: RuleStatus;
 
+  @ApiPropertyOptional({
+    enum: RuleType,
+    description:
+      'STANDARD requires human approval levels. AUTO_APPROVE finalizes the workflow as approved as soon as this rule matches, with no levels. Defaults to STANDARD.',
+  })
+  @IsOptional()
+  @IsEnum(RuleType)
+  ruleType?: RuleType;
+
   @ApiProperty({ enum: RuleConflictStrategy })
   @IsEnum(RuleConflictStrategy)
   conflictStrategy!: RuleConflictStrategy;
@@ -78,9 +87,12 @@ export class CreateRuleDto {
   @Type(() => RuleConditionDto)
   conditions!: RuleConditionDto[];
 
-  @ApiProperty({ type: [RuleLevelDto] })
+  @ApiProperty({
+    type: [RuleLevelDto],
+    description:
+      'Required (min 1) for STANDARD rules. Must be omitted or empty for AUTO_APPROVE rules — enforced in RuleService.',
+  })
   @IsArray()
-  @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => RuleLevelDto)
   levels!: RuleLevelDto[];

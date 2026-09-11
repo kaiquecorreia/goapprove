@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, RuleStatus, UserRole } from '@prisma/client';
+import { Prisma, RuleStatus, RuleType, UserRole } from '@prisma/client';
 
 import { CompanyAccessService } from '../../company/services/company-access.service';
 import { CompanyUserRepository } from '../../company/repositories/company-user.repository';
@@ -44,7 +44,13 @@ export class RuleService {
       data.companyId,
     ]);
     this.validateConditions(data.conditions);
-    await this.validateLevels(data.levels, data.companyId);
+
+    const ruleType = data.ruleType ?? RuleType.STANDARD;
+    this.validateLevelsForRuleType(ruleType, data.levels);
+
+    if (ruleType !== RuleType.AUTO_APPROVE) {
+      await this.validateLevels(data.levels, data.companyId);
+    }
 
     return this.transactionService.run(async () => {
       try {
@@ -117,7 +123,11 @@ export class RuleService {
         ]);
       }
 
-      if (data.levels) {
+      const effectiveRuleType = data.ruleType ?? existing.ruleType;
+      const effectiveLevels = data.levels ?? existing.levels;
+      this.validateLevelsForRuleType(effectiveRuleType, effectiveLevels);
+
+      if (data.levels && effectiveRuleType !== RuleType.AUTO_APPROVE) {
         await this.validateLevels(
           data.levels,
           data.companyId ?? existing.companyId,
@@ -170,6 +180,27 @@ export class RuleService {
 
   async delete(ruleId: string, actingUser: AuthenticatedUser) {
     return this.setStatus(ruleId, RuleStatus.INACTIVE, actingUser);
+  }
+
+  private validateLevelsForRuleType(
+    ruleType: RuleType,
+    levels: { length: number },
+  ) {
+    if (ruleType === RuleType.AUTO_APPROVE) {
+      if (levels.length > 0) {
+        throw new BadRequestException(
+          'AUTO_APPROVE rules cannot have approval levels — they finalize as approved as soon as they match',
+        );
+      }
+
+      return;
+    }
+
+    if (levels.length === 0) {
+      throw new BadRequestException(
+        'STANDARD rules require at least one approval level',
+      );
+    }
   }
 
   private validateConditions(conditions: CreateRuleDto['conditions']) {

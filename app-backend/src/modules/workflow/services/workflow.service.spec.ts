@@ -413,7 +413,12 @@ describe('WorkflowService', () => {
       workflowRepository.create.mockResolvedValue(buildWorkflow());
 
       await service.startWorkflow('po-1', {
-        rule: { ruleId: 'rule-1', code: 'R1', name: 'Rule 1' },
+        rule: {
+          ruleId: 'rule-1',
+          code: 'R1',
+          name: 'Rule 1',
+          ruleType: 'STANDARD',
+        },
         levels: [
           { levelNumber: 1, mode: 'ANY', approverUserIds: ['approverA'] },
         ],
@@ -434,6 +439,52 @@ describe('WorkflowService', () => {
           entityId: 'po-1',
         }),
       );
+    });
+
+    it('regra AUTO_APPROVE: finaliza o workflow como APPROVED sem níveis e sincroniza com o LN', async () => {
+      workflowRepository.create.mockResolvedValue(
+        buildWorkflow({ status: 'APPROVED', currentLevel: null, levels: [] }),
+      );
+      workflowRepository.findByPurchaseOrderId.mockResolvedValue(
+        buildWorkflow({ status: 'APPROVED', currentLevel: null, levels: [] }),
+      );
+
+      await service.startWorkflow('po-1', {
+        rule: {
+          ruleId: 'rule-auto',
+          code: 'INTERCOMPANY',
+          name: 'Intercompany auto-approval',
+          ruleType: 'AUTO_APPROVE',
+        },
+        levels: [],
+        matchedAt: new Date(),
+      });
+
+      expect(workflowRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'APPROVED',
+          ruleId: 'rule-auto',
+          currentLevel: null,
+          levels: [],
+        }),
+      );
+      expect(workflowRepository.updateWorkflow).toHaveBeenCalledWith(
+        'workflow-1',
+        expect.objectContaining({ lnSyncStatus: 'PENDING' }),
+      );
+      expect(workflowRepository.updatePurchaseOrderStatus).toHaveBeenCalledWith(
+        'po-1',
+        'APPROVED',
+      );
+      expect(auditService.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'workflow.auto_approved_by_rule',
+          entity: 'PurchaseOrder',
+          entityId: 'po-1',
+          critical: true,
+        }),
+      );
+      expect(lnSyncService.sendResult).toHaveBeenCalledWith('workflow-1');
     });
   });
 

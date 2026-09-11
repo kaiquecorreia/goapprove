@@ -42,7 +42,12 @@ export class RuleEngineService {
       .map((rule) => rule.ruleId);
 
     return {
-      rule: { ruleId: winner.ruleId, code: winner.code, name: winner.name },
+      rule: {
+        ruleId: winner.ruleId,
+        code: winner.code,
+        name: winner.name,
+        ruleType: winner.ruleType,
+      },
       levels: winner.levels
         .slice()
         .sort((a, b) => a.levelNumber - b.levelNumber)

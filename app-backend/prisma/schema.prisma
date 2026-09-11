@@ -192,6 +192,11 @@ enum RuleStatus {
   INACTIVE
 }
 
+enum RuleType {
+  STANDARD
+  AUTO_APPROVE
+}
+
 enum ApprovalMode {
   ANY
   ALL
@@ -236,6 +241,7 @@ model Rule {
   validFrom        DateTime             @map("valid_from") @db.Date
   validTo          DateTime?            @map("valid_to") @db.Date
   status           RuleStatus           @default(ACTIVE) @map("status")
+  ruleType         RuleType             @default(STANDARD) @map("rule_type")
   conflictStrategy RuleConflictStrategy @default(HIGHEST_PRIORITY) @map("conflict_strategy")
   createdAt        DateTime             @default(now()) @map("created_at")
   updatedAt        DateTime             @updatedAt @map("updated_at")
