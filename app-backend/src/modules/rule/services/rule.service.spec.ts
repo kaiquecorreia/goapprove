@@ -150,7 +150,9 @@ describe('RuleService', () => {
     });
 
     it('aceita regra AUTO_APPROVE sem níveis e pula a validação de aprovadores', async () => {
-      ruleRepository.create.mockResolvedValue(buildRule({ ruleType: 'AUTO_APPROVE' }));
+      ruleRepository.create.mockResolvedValue(
+        buildRule({ ruleType: 'AUTO_APPROVE' }),
+      );
 
       await service.create(
         {
