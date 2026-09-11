@@ -7,6 +7,7 @@ import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { EUserRole, navigationGroups } from '@/config/navigation';
 import { cx } from '@/lib/cx';
 import Logo from '@/components/Logo';
+import { APP_VERSION } from '@/lib/version';
 import styles from './styles.module.scss';
 
 interface AppSidebarProps {
@@ -66,6 +67,8 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
           </div>
         ))}
       </nav>
+
+      {!collapsed && <span className={styles.version}>v{APP_VERSION}</span>}
     </aside>
   );
 }
