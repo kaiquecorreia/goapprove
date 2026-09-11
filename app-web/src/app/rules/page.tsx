@@ -28,7 +28,7 @@ export default async function RegrasPage() {
 
       <Card>
         <CardContent>
-          <RulesTable rules={rules} />
+          <RulesTable rules={rules} companies={companies} users={users} />
         </CardContent>
       </Card>
     </div>

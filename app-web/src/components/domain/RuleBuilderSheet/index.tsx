@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,29 +22,21 @@ import { Separator } from '@/components/ui/Separator';
 import { CriteriaBuilder } from '@/components/domain/CriteriaBuilder';
 import { ApprovalLevelsBuilder } from '@/components/domain/ApprovalLevelsBuilder';
 import { feedback } from '@/services/feedback';
-import { createRule, type RuleConditionPayload } from '@/services/rulesClient';
+import { createRule, updateRule, type RuleConditionPayload } from '@/services/rulesClient';
 import { CONFLICT_STRATEGIES } from '@/lib/mock/rules';
 import { ruleSchema, type RuleFormData } from '@/app/rules/schema';
-import type { Company, User } from '@/lib/mock/types';
+import type { Company, Rule, User } from '@/lib/mock/types';
 
 interface RuleBuilderSheetProps {
   trigger: ReactNode;
   companies: Company[];
   users: User[];
+  rule?: Rule;
 }
 
-export function RuleBuilderSheet({ trigger, companies, users }: RuleBuilderSheetProps) {
-  const router = useRouter();
-  const {
-    register,
-    control,
-    handleSubmit,
-    reset,
-    setValue,
-    formState: { errors, isSubmitting },
-  } = useForm<RuleFormData>({
-    resolver: zodResolver(ruleSchema),
-    defaultValues: {
+function buildDefaultValues(rule?: Rule): RuleFormData {
+  if (!rule) {
+    return {
       code: '',
       name: '',
       description: '',
@@ -55,8 +47,53 @@ export function RuleBuilderSheet({ trigger, companies, users }: RuleBuilderSheet
       conflictStrategy: 'HIGHEST_PRIORITY',
       criteria: [{ sourceType: 'PO_HEADER', field: '', operator: 'EQUALS', value: '' }],
       levels: [{ mode: 'ANY', approverUserIds: [] }],
-    },
+    };
+  }
+
+  return {
+    code: rule.code,
+    name: rule.name,
+    description: rule.description ?? '',
+    companyId: rule.companyId,
+    priority: rule.priority,
+    validFrom: rule.validFrom.slice(0, 10),
+    validTo: rule.validTo ? rule.validTo.slice(0, 10) : '',
+    conflictStrategy: rule.conflictStrategy,
+    criteria: rule.criteria.map((criterion) => ({
+      sourceType: criterion.sourceType,
+      field: criterion.field,
+      operator: criterion.operator,
+      value: criterion.value ?? '',
+      valueTo: criterion.valueTo ?? '',
+      valueList: criterion.valueList?.join(', ') ?? '',
+    })),
+    levels: rule.levels.map((level) => ({
+      mode: level.mode,
+      approverUserIds: level.approvers.map((approver) => approver.userId),
+    })),
+  };
+}
+
+export function RuleBuilderSheet({ trigger, companies, users, rule }: RuleBuilderSheetProps) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const {
+    register,
+    control,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<RuleFormData>({
+    resolver: zodResolver(ruleSchema),
+    defaultValues: buildDefaultValues(rule),
   });
+
+  useEffect(() => {
+    if (open) {
+      reset(buildDefaultValues(rule));
+    }
+  }, [open, rule, reset]);
 
   const onSubmit = async (data: RuleFormData) => {
     const conditions: RuleConditionPayload[] = data.criteria.map((criterion) => ({
@@ -73,40 +110,53 @@ export function RuleBuilderSheet({ trigger, companies, users }: RuleBuilderSheet
         : undefined,
     }));
 
-    try {
-      await createRule({
-        code: data.code,
-        name: data.name,
-        description: data.description || undefined,
-        companyId: data.companyId,
-        priority: data.priority,
-        validFrom: data.validFrom,
-        validTo: data.validTo || undefined,
-        conflictStrategy: data.conflictStrategy,
-        conditions,
-        levels: data.levels.map((level, index) => ({
-          levelNumber: index + 1,
-          mode: level.mode,
-          approverUserIds: level.approverUserIds,
-        })),
-      });
+    const payload = {
+      code: data.code,
+      name: data.name,
+      description: data.description || undefined,
+      companyId: data.companyId,
+      priority: data.priority,
+      validFrom: data.validFrom,
+      validTo: data.validTo || undefined,
+      conflictStrategy: data.conflictStrategy,
+      conditions,
+      levels: data.levels.map((level, index) => ({
+        levelNumber: index + 1,
+        mode: level.mode,
+        approverUserIds: level.approverUserIds,
+      })),
+    };
 
-      feedback.success(`Regra "${data.name}" criada com sucesso!`);
-      reset();
+    try {
+      if (rule) {
+        await updateRule(rule.id, payload);
+        feedback.success(`Regra "${data.name}" atualizada com sucesso!`);
+      } else {
+        await createRule(payload);
+        feedback.success(`Regra "${data.name}" criada com sucesso!`);
+        reset(buildDefaultValues());
+      }
+      setOpen(false);
       router.refresh();
     } catch (err) {
-      feedback.error(err instanceof Error ? err.message : 'Falha ao criar regra.');
+      feedback.error(
+        err instanceof Error ? err.message : `Falha ao ${rule ? 'atualizar' : 'criar'} regra.`,
+      );
     }
   };
 
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger>{trigger}</SheetTrigger>
       <SheetContent size="lg">
         <SheetHeader>
-          <SheetTitle>Nova regra de aprovação</SheetTitle>
+          <SheetTitle>
+            {rule ? `Editar regra "${rule.name}"` : 'Nova regra de aprovação'}
+          </SheetTitle>
           <SheetDescription>
-            Defina critérios e níveis de aprovação aplicáveis às OCs recebidas.
+            {rule
+              ? 'Atualize os critérios e níveis de aprovação desta regra.'
+              : 'Defina critérios e níveis de aprovação aplicáveis às OCs recebidas.'}
           </SheetDescription>
         </SheetHeader>
 
@@ -204,7 +254,7 @@ export function RuleBuilderSheet({ trigger, companies, users }: RuleBuilderSheet
 
           <SheetFooter>
             <Button type="submit" isLoading={isSubmitting}>
-              Salvar regra
+              {rule ? 'Salvar alterações' : 'Salvar regra'}
             </Button>
           </SheetFooter>
         </form>

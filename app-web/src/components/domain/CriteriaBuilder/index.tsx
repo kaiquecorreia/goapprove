@@ -46,13 +46,12 @@ function CriterionRow({ control, register, setValue, index, onRemove }: Criterio
       ? RULE_FIELDS_BY_SOURCE[sourceType]
       : null;
 
-  const isFirstRender = useRef(true);
+  const previousSourceType = useRef(sourceType);
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
+    if (previousSourceType.current !== undefined && previousSourceType.current !== sourceType) {
+      setValue(`criteria.${index}.field`, '');
     }
-    setValue(`criteria.${index}.field`, '');
+    previousSourceType.current = sourceType;
   }, [sourceType, index, setValue]);
 
   return (
