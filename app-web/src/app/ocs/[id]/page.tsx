@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, Check, X } from 'lucide-react';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { RefreshButton } from '@/components/ui/RefreshButton';
+import { LoadingOverlay } from '@/components/ui/LoadingOverlay';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
@@ -75,7 +77,7 @@ export default function OcDetailPage() {
     }
   };
 
-  if (loading) {
+  if (loading && !order) {
     return <p className={styles.stateMessage}>Carregando OC…</p>;
   }
 
@@ -102,104 +104,111 @@ export default function OcDetailPage() {
         title={order.number}
         description={`${order.company} · ${order.supplier}`}
         actions={
-          order.status === 'pending' ? (
-            <>
-              <Button
-                variant="outline"
-                leftIcon={<X size={16} />}
-                onClick={() => setRejectOpen(true)}
-              >
-                Rejeitar
-              </Button>
-              <Button leftIcon={<Check size={16} />} onClick={handleApprove}>
-                Aprovar
-              </Button>
-            </>
-          ) : undefined
+          <>
+            <RefreshButton onRefresh={fetchOrder} isLoading={loading} />
+            {order.status === 'pending' && (
+              <>
+                <Button
+                  variant="outline"
+                  leftIcon={<X size={16} />}
+                  onClick={() => setRejectOpen(true)}
+                >
+                  Rejeitar
+                </Button>
+                <Button leftIcon={<Check size={16} />} onClick={handleApprove}>
+                  Aprovar
+                </Button>
+              </>
+            )}
+          </>
         }
       />
 
-      <div className={styles.badgeRow}>
-        <StatusBadge status={order.status} />
-        <LNBadge status={order.lnStatus} />
-      </div>
+      <LoadingOverlay isLoading={loading}>
+        <div className={styles.stack}>
+          <div className={styles.badgeRow}>
+            <StatusBadge status={order.status} />
+            <LNBadge status={order.lnStatus} />
+          </div>
 
-      <div className={styles.layout}>
-        <div className={styles.main}>
-          <Tabs defaultValue="resumo">
-            <TabsList>
-              <TabsTrigger value="resumo">Resumo</TabsTrigger>
-              <TabsTrigger value="itens">Itens</TabsTrigger>
-              <TabsTrigger value="workflow">Workflow</TabsTrigger>
-              <TabsTrigger value="payload">Payload LN</TabsTrigger>
-            </TabsList>
+          <div className={styles.layout}>
+            <div className={styles.main}>
+              <Tabs defaultValue="resumo">
+                <TabsList>
+                  <TabsTrigger value="resumo">Resumo</TabsTrigger>
+                  <TabsTrigger value="itens">Itens</TabsTrigger>
+                  <TabsTrigger value="workflow">Workflow</TabsTrigger>
+                  <TabsTrigger value="payload">Payload LN</TabsTrigger>
+                </TabsList>
 
-            <TabsContent value="resumo">
+                <TabsContent value="resumo">
+                  <Card>
+                    <CardContent className={styles.summaryGrid}>
+                      <div>
+                        <span className={styles.summaryLabel}>Valor total</span>
+                        <span className={styles.summaryValue}>{formatCurrency(order.total)}</span>
+                      </div>
+                      <div>
+                        <span className={styles.summaryLabel}>Solicitante</span>
+                        <span className={styles.summaryValue}>{order.requester}</span>
+                      </div>
+                      <div>
+                        <span className={styles.summaryLabel}>Comprador</span>
+                        <span className={styles.summaryValue}>{order.buyer}</span>
+                      </div>
+                      <div>
+                        <span className={styles.summaryLabel}>Projeto</span>
+                        <span className={styles.summaryValue}>{order.project}</span>
+                      </div>
+                      <div>
+                        <span className={styles.summaryLabel}>Centro de custo</span>
+                        <span className={styles.summaryValue}>{order.costCenter}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="itens">
+                  <Card>
+                    <CardContent>
+                      <OcItemsTable items={order.items} />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="workflow">
+                  <Card>
+                    <CardContent>
+                      <ApprovalWorkflowPanel levels={order.workflow} />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="payload">
+                  <Card>
+                    <CardContent>
+                      <OcPayloadViewer order={order} />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+            </div>
+
+            <div className={styles.sidebar}>
+              <AppliedRuleCard ruleName={order.appliedRule} />
+
               <Card>
-                <CardContent className={styles.summaryGrid}>
-                  <div>
-                    <span className={styles.summaryLabel}>Valor total</span>
-                    <span className={styles.summaryValue}>{formatCurrency(order.total)}</span>
-                  </div>
-                  <div>
-                    <span className={styles.summaryLabel}>Solicitante</span>
-                    <span className={styles.summaryValue}>{order.requester}</span>
-                  </div>
-                  <div>
-                    <span className={styles.summaryLabel}>Comprador</span>
-                    <span className={styles.summaryValue}>{order.buyer}</span>
-                  </div>
-                  <div>
-                    <span className={styles.summaryLabel}>Projeto</span>
-                    <span className={styles.summaryValue}>{order.project}</span>
-                  </div>
-                  <div>
-                    <span className={styles.summaryLabel}>Centro de custo</span>
-                    <span className={styles.summaryValue}>{order.costCenter}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="itens">
-              <Card>
+                <CardHeader>
+                  <CardTitle>Linha do tempo</CardTitle>
+                </CardHeader>
                 <CardContent>
-                  <OcItemsTable items={order.items} />
+                  <OcTimeline events={order.timeline} />
                 </CardContent>
               </Card>
-            </TabsContent>
-
-            <TabsContent value="workflow">
-              <Card>
-                <CardContent>
-                  <ApprovalWorkflowPanel levels={order.workflow} />
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="payload">
-              <Card>
-                <CardContent>
-                  <OcPayloadViewer order={order} />
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+            </div>
+          </div>
         </div>
-
-        <div className={styles.sidebar}>
-          <AppliedRuleCard ruleName={order.appliedRule} />
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Linha do tempo</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <OcTimeline events={order.timeline} />
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      </LoadingOverlay>
 
       <RejectReasonDialog
         open={rejectOpen}

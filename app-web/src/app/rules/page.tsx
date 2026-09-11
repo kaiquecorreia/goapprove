@@ -1,6 +1,6 @@
 import { Plus } from 'lucide-react';
-import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { RefreshablePage } from '@/components/ui/RefreshablePage';
 import { Card, CardContent } from '@/components/ui/Card';
 import { RulesTable } from '@/components/domain/RulesTable';
 import { RuleBuilderSheet } from '@/components/domain/RuleBuilderSheet';
@@ -14,23 +14,23 @@ export default async function RegrasPage() {
 
   return (
     <div className={styles.page}>
-      <PageHeader
+      <RefreshablePage
         title="Regras de Negócio"
         description="Regras de aprovação aplicadas automaticamente às OCs recebidas."
-        actions={
+        extraActions={
           <RuleBuilderSheet
             trigger={<Button leftIcon={<Plus size={16} />}>Nova regra</Button>}
             companies={companies}
             users={users}
           />
         }
-      />
-
-      <Card>
-        <CardContent>
-          <RulesTable rules={rules} companies={companies} users={users} />
-        </CardContent>
-      </Card>
+      >
+        <Card>
+          <CardContent>
+            <RulesTable rules={rules} companies={companies} users={users} />
+          </CardContent>
+        </Card>
+      </RefreshablePage>
     </div>
   );
 }

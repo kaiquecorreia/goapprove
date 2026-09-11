@@ -1,5 +1,7 @@
+import { RefreshCw } from 'lucide-react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Card, CardContent } from '@/components/ui/Card';
+import { cx } from '@/lib/cx';
 import styles from './styles.module.scss';
 
 interface PageLoadingStateProps {
@@ -17,7 +19,10 @@ export function PageLoadingState({ title, description }: PageLoadingStateProps) 
 
       <Card>
         <CardContent>
-          <p className={styles.stateMessage}>Carregando…</p>
+          <p className={styles.stateMessage}>
+            <RefreshCw size={16} className={cx(styles.icon, styles.spin)} />
+            Carregando…
+          </p>
         </CardContent>
       </Card>
     </div>

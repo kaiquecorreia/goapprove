@@ -6,6 +6,12 @@
   gap: 1.1rem;
 }
 
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
 .backLink {
   display: inline-flex;
   align-items: center;

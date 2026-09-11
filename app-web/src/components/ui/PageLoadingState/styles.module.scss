@@ -1,3 +1,5 @@
+@use '../../../styles/animations' as *;
+
 .page {
   display: flex;
   flex-direction: column;
@@ -5,8 +7,15 @@
 }
 
 .stateMessage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   padding: 2rem 0;
-  text-align: center;
   color: var(--color-text-secondary);
   font-size: 0.9rem;
+}
+
+.icon {
+  color: var(--color-brand-primary);
 }

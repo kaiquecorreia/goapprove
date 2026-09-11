@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { RefreshButton } from '@/components/ui/RefreshButton';
+import { LoadingOverlay } from '@/components/ui/LoadingOverlay';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Pagination } from '@/components/ui/Pagination';
 import { AuditFiltersBar, type AuditFilters } from '@/components/domain/AuditFiltersBar';
@@ -69,6 +71,7 @@ export default function AuditoriaPage() {
       <PageHeader
         title="Auditoria"
         description="Trilha de auditoria de ações realizadas no GoApprove."
+        actions={<RefreshButton onRefresh={fetchEvents} isLoading={loading} />}
       />
 
       <Card>
@@ -79,12 +82,12 @@ export default function AuditoriaPage() {
 
       <Card>
         <CardContent>
-          {loading ? (
+          {data.items.length === 0 && loading ? (
             <p className={styles.stateMessage}>Carregando eventos…</p>
           ) : data.items.length === 0 ? (
             <p className={styles.stateMessage}>Nenhum evento encontrado.</p>
           ) : (
-            <>
+            <LoadingOverlay isLoading={loading}>
               <AuditTable events={data.items} onViewDetail={setSelectedEvent} />
               <Pagination
                 page={data.page}
@@ -92,7 +95,7 @@ export default function AuditoriaPage() {
                 total={data.total}
                 onPageChange={setPage}
               />
-            </>
+            </LoadingOverlay>
           )}
         </CardContent>
       </Card>

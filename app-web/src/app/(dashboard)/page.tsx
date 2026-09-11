@@ -1,6 +1,6 @@
 import { AlertTriangle, CheckCircle2, Clock, XCircle } from 'lucide-react';
-import { PageHeader } from '@/components/ui/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { RefreshablePage } from '@/components/ui/RefreshablePage';
 import { KpiCard } from '@/components/domain/KpiCard';
 import { DashboardFiltersBar } from '@/components/domain/DashboardFiltersBar';
 import { MonthlyStatusChart } from '@/components/domain/MonthlyStatusChart';
@@ -39,73 +39,75 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   return (
     <div className={styles.page}>
-      <PageHeader
+      <RefreshablePage
         title="Dashboard"
         description="Visão geral do fluxo de aprovação de OCs."
-        actions={
+        extraActions={
           <DashboardFiltersBar period={period} companyId={companyId} companies={companies} />
         }
-      />
+      >
+        <div className={styles.stack}>
+          <div className={styles.kpiGrid}>
+            <KpiCard
+              title="Pendentes"
+              value={String(kpis.pending)}
+              icon={<Clock size={20} />}
+              tone="warning"
+            />
+            <KpiCard
+              title="Aprovadas"
+              value={String(kpis.approved)}
+              icon={<CheckCircle2 size={20} />}
+              tone="success"
+            />
+            <KpiCard
+              title="Rejeitadas"
+              value={String(kpis.rejected)}
+              icon={<XCircle size={20} />}
+              tone="destructive"
+            />
+            <KpiCard
+              title="Valor total"
+              value={formatCurrency(kpis.totalAmount)}
+              icon={<AlertTriangle size={20} />}
+              tone="primary"
+            />
+          </div>
 
-      <div className={styles.kpiGrid}>
-        <KpiCard
-          title="Pendentes"
-          value={String(kpis.pending)}
-          icon={<Clock size={20} />}
-          tone="warning"
-        />
-        <KpiCard
-          title="Aprovadas"
-          value={String(kpis.approved)}
-          icon={<CheckCircle2 size={20} />}
-          tone="success"
-        />
-        <KpiCard
-          title="Rejeitadas"
-          value={String(kpis.rejected)}
-          icon={<XCircle size={20} />}
-          tone="destructive"
-        />
-        <KpiCard
-          title="Valor total"
-          value={formatCurrency(kpis.totalAmount)}
-          icon={<AlertTriangle size={20} />}
-          tone="primary"
-        />
-      </div>
+          <div className={styles.chartsGrid}>
+            <Card>
+              <CardHeader>
+                <CardTitle>Tendência mensal</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <MonthlyStatusChart data={monthlyStats} />
+              </CardContent>
+            </Card>
 
-      <div className={styles.chartsGrid}>
-        <Card>
-          <CardHeader>
-            <CardTitle>Tendência mensal</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <MonthlyStatusChart data={monthlyStats} />
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Distribuição por empresa</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {companyDistribution.length > 0 ? (
+                  <CompanyDistributionChart data={companyDistribution} />
+                ) : (
+                  <p className={styles.stateMessage}>Nenhuma OC no período.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Distribuição por empresa</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {companyDistribution.length > 0 ? (
-              <CompanyDistributionChart data={companyDistribution} />
-            ) : (
-              <p className={styles.stateMessage}>Nenhuma OC no período.</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Atividade recente</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <RecentOcList orders={recentOrders} />
-        </CardContent>
-      </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Atividade recente</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <RecentOcList orders={recentOrders} />
+            </CardContent>
+          </Card>
+        </div>
+      </RefreshablePage>
     </div>
   );
 }

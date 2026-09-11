@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { Check } from 'lucide-react';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { RefreshButton } from '@/components/ui/RefreshButton';
+import { LoadingOverlay } from '@/components/ui/LoadingOverlay';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Pagination } from '@/components/ui/Pagination';
@@ -153,11 +155,14 @@ export function PendingOcsBoard({ companies }: PendingOcsBoardProps) {
         title="OCs Pendentes"
         description="Ordens de compra aguardando aprovação."
         actions={
-          selected.length > 0 ? (
-            <Button leftIcon={<Check size={16} />} onClick={handleBulkApprove}>
-              Aprovar selecionadas ({selected.length})
-            </Button>
-          ) : undefined
+          <>
+            <RefreshButton onRefresh={fetchPending} isLoading={loading} />
+            {selected.length > 0 && (
+              <Button leftIcon={<Check size={16} />} onClick={handleBulkApprove}>
+                Aprovar selecionadas ({selected.length})
+              </Button>
+            )}
+          </>
         }
       />
 
@@ -174,12 +179,12 @@ export function PendingOcsBoard({ companies }: PendingOcsBoardProps) {
 
       <Card>
         <CardContent>
-          {loading ? (
+          {data.items.length === 0 && loading ? (
             <p className={styles.stateMessage}>Carregando OCs pendentes…</p>
           ) : data.items.length === 0 ? (
             <p className={styles.stateMessage}>Nenhuma OC pendente encontrada.</p>
           ) : (
-            <>
+            <LoadingOverlay isLoading={loading}>
               <OcTable
                 orders={data.items}
                 showSelection
@@ -196,7 +201,7 @@ export function PendingOcsBoard({ companies }: PendingOcsBoardProps) {
                 total={data.total}
                 onPageChange={setPage}
               />
-            </>
+            </LoadingOverlay>
           )}
         </CardContent>
       </Card>

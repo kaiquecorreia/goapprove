@@ -1,6 +1,6 @@
 import { Plus } from 'lucide-react';
-import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { RefreshablePage } from '@/components/ui/RefreshablePage';
 import { Card, CardContent } from '@/components/ui/Card';
 import { CompaniesTable } from '@/components/domain/CompaniesTable';
 import { CompanyFormDialog } from '@/components/domain/CompanyFormDialog';
@@ -15,23 +15,23 @@ export default async function EmpresasPage() {
 
   return (
     <div className={styles.page}>
-      <PageHeader
+      <RefreshablePage
         title="Empresas"
         description="Empresas integradas ao ERP Infor LN."
-        actions={
-          isAdministrator ? (
+        extraActions={
+          isAdministrator && (
             <CompanyFormDialog
               trigger={<Button leftIcon={<Plus size={16} />}>Nova empresa</Button>}
             />
-          ) : undefined
+          )
         }
-      />
-
-      <Card>
-        <CardContent>
-          <CompaniesTable companies={companies} />
-        </CardContent>
-      </Card>
+      >
+        <Card>
+          <CardContent>
+            <CompaniesTable companies={companies} />
+          </CardContent>
+        </Card>
+      </RefreshablePage>
     </div>
   );
 }

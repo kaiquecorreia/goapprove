@@ -6,9 +6,15 @@
 
 .filtersContent {
   display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+}
+
+.filtersRow {
+  display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
-  padding: 1rem 1.25rem;
 }
 
 .search {

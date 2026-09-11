@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Search } from 'lucide-react';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { RefreshButton } from '@/components/ui/RefreshButton';
+import { LoadingOverlay } from '@/components/ui/LoadingOverlay';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Pagination } from '@/components/ui/Pagination';
@@ -76,44 +78,50 @@ export default function HistoricoPage() {
 
   return (
     <div className={styles.page}>
-      <PageHeader title="Histórico" description="Histórico completo de OCs processadas." />
+      <PageHeader
+        title="Histórico"
+        description="Histórico completo de OCs processadas."
+        actions={<RefreshButton onRefresh={fetchHistory} isLoading={loading} />}
+      />
 
       <Card>
         <CardContent className={styles.filtersContent}>
-          <Input
-            leftIcon={<Search size={16} />}
-            placeholder="Buscar por OC, fornecedor ou solicitante..."
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            wrapperClassName={styles.search}
-          />
-          <Input
-            type="date"
-            value={date}
-            onChange={(event) => setDate(event.target.value)}
-            wrapperClassName={styles.date}
-          />
+          <div className={styles.filtersRow}>
+            <Input
+              leftIcon={<Search size={16} />}
+              placeholder="Buscar por OC, fornecedor ou solicitante..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              wrapperClassName={styles.search}
+            />
+            <Input
+              type="date"
+              value={date}
+              onChange={(event) => setDate(event.target.value)}
+              wrapperClassName={styles.date}
+            />
+          </div>
+
+          <Tabs value={status} onValueChange={(value) => setStatus(value as OCStatus | 'all')}>
+            <TabsList>
+              {STATUS_TABS.map((tab) => (
+                <TabsTrigger key={tab.value} value={tab.value}>
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
         </CardContent>
       </Card>
 
-      <Tabs value={status} onValueChange={(value) => setStatus(value as OCStatus | 'all')}>
-        <TabsList>
-          {STATUS_TABS.map((tab) => (
-            <TabsTrigger key={tab.value} value={tab.value}>
-              {tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
-
       <Card>
         <CardContent>
-          {loading ? (
+          {data.items.length === 0 && loading ? (
             <p className={styles.stateMessage}>Carregando histórico…</p>
           ) : data.items.length === 0 ? (
             <p className={styles.stateMessage}>Nenhuma OC encontrada.</p>
           ) : (
-            <>
+            <LoadingOverlay isLoading={loading}>
               <OcTable orders={data.items} />
               <Pagination
                 page={data.page}
@@ -121,7 +129,7 @@ export default function HistoricoPage() {
                 total={data.total}
                 onPageChange={setPage}
               />
-            </>
+            </LoadingOverlay>
           )}
         </CardContent>
       </Card>

@@ -6,6 +6,12 @@
   gap: 1.25rem;
 }
 
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
 .kpiGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

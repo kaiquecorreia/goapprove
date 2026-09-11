@@ -1,6 +1,6 @@
 import { Plus } from 'lucide-react';
-import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { RefreshablePage } from '@/components/ui/RefreshablePage';
 import { Card, CardContent } from '@/components/ui/Card';
 import { UsersTable } from '@/components/domain/UsersTable';
 import { UserFormDialog } from '@/components/domain/UserFormDialog';
@@ -13,23 +13,23 @@ export default async function UsuariosPage() {
 
   return (
     <div className={styles.page}>
-      <PageHeader
+      <RefreshablePage
         title="Usuários"
         description="Usuários com acesso ao fluxo de aprovação de OCs."
-        actions={
+        extraActions={
           <UserFormDialog
             companies={companies}
             users={users}
             trigger={<Button leftIcon={<Plus size={16} />}>Novo usuário</Button>}
           />
         }
-      />
-
-      <Card>
-        <CardContent>
-          <UsersTable users={users} companies={companies} />
-        </CardContent>
-      </Card>
+      >
+        <Card>
+          <CardContent>
+            <UsersTable users={users} companies={companies} />
+          </CardContent>
+        </Card>
+      </RefreshablePage>
     </div>
   );
 }
