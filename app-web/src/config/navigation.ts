@@ -7,6 +7,8 @@ import {
   Users,
   Building2,
   ShieldCheck,
+  FilePlus2,
+  ClipboardList,
 } from 'lucide-react';
 
 type RoutesType = {
@@ -26,6 +28,10 @@ export enum ERoutePath {
   INTEGRATIONS = '/integrations',
   OCS_PENDING = '/ocs/pending',
   HISTORY = '/history',
+  QUOTES_DASHBOARD = '/quotes',
+  QUOTES_NEW = '/quotes/new',
+  QUOTES_PENDING = '/quotes/pending',
+  QUOTES_HISTORY = '/quotes/history',
   RULES = '/rules',
   USERS = '/users',
   COMPANIES = '/companies',
@@ -39,6 +45,10 @@ export const ROUTES: RoutesType = {
     ERoutePath.INTEGRATIONS,
     ERoutePath.OCS_PENDING,
     ERoutePath.HISTORY,
+    ERoutePath.QUOTES_DASHBOARD,
+    ERoutePath.QUOTES_NEW,
+    ERoutePath.QUOTES_PENDING,
+    ERoutePath.QUOTES_HISTORY,
     ERoutePath.RULES,
     ERoutePath.USERS,
     ERoutePath.COMPANIES,
@@ -71,6 +81,10 @@ const ALL_PAGE_ROUTES = [
   ERoutePath.HOME,
   ERoutePath.OCS_PENDING,
   ERoutePath.HISTORY,
+  ERoutePath.QUOTES_DASHBOARD,
+  ERoutePath.QUOTES_NEW,
+  ERoutePath.QUOTES_PENDING,
+  ERoutePath.QUOTES_HISTORY,
   ERoutePath.RULES,
   ERoutePath.USERS,
   ERoutePath.COMPANIES,
@@ -85,8 +99,8 @@ const OWNER_PAGE_ROUTES = ALL_PAGE_ROUTES.filter((route) => route !== ERoutePath
 export const ROLE_ROUTE_ACCESS: Record<EUserRole, ERoutePath[]> = {
   [EUserRole.OWNER]: OWNER_PAGE_ROUTES,
   [EUserRole.ADMINISTRATOR]: ALL_PAGE_ROUTES,
-  [EUserRole.APPROVER]: [ERoutePath.OCS_PENDING],
-  [EUserRole.VIEWER]: [ERoutePath.HISTORY],
+  [EUserRole.APPROVER]: [ERoutePath.OCS_PENDING, ERoutePath.QUOTES_NEW, ERoutePath.QUOTES_PENDING],
+  [EUserRole.VIEWER]: [ERoutePath.HISTORY, ERoutePath.QUOTES_HISTORY],
   [EUserRole.RULES_MANAGER]: [ERoutePath.RULES],
   [EUserRole.EXTERNAL_INTEGRATION]: [ERoutePath.COMPANIES],
 };
@@ -164,6 +178,37 @@ export const navigationGroups: NavigationGroup[] = [
       {
         name: 'Histórico',
         href: ERoutePath.HISTORY,
+        icon: History,
+        allowedRoles: [EUserRole.OWNER, EUserRole.ADMINISTRATOR, EUserRole.VIEWER],
+      },
+    ],
+  },
+  {
+    id: 'quotes',
+    label: 'Cotação',
+    collapsible: true,
+    items: [
+      {
+        name: 'Dashboard',
+        href: ERoutePath.QUOTES_DASHBOARD,
+        icon: LayoutDashboard,
+        allowedRoles: [EUserRole.OWNER, EUserRole.ADMINISTRATOR],
+      },
+      {
+        name: 'Nova Cotação',
+        href: ERoutePath.QUOTES_NEW,
+        icon: FilePlus2,
+        allowedRoles: [EUserRole.OWNER, EUserRole.ADMINISTRATOR, EUserRole.APPROVER],
+      },
+      {
+        name: 'Cotações Pendentes',
+        href: ERoutePath.QUOTES_PENDING,
+        icon: ClipboardList,
+        allowedRoles: [EUserRole.OWNER, EUserRole.ADMINISTRATOR, EUserRole.APPROVER],
+      },
+      {
+        name: 'Histórico',
+        href: ERoutePath.QUOTES_HISTORY,
         icon: History,
         allowedRoles: [EUserRole.OWNER, EUserRole.ADMINISTRATOR, EUserRole.VIEWER],
       },
