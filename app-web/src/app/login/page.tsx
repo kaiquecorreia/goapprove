@@ -84,7 +84,7 @@ function LoginContent() {
 
         <form className={styles.loginForm} onSubmit={handleSubmit(onSubmit)}>
           <div className={styles.inputGroup}>
-            <label htmlFor="identifier">Usário</label>
+            <label htmlFor="identifier">Usuário</label>
             <input
               type="text"
               id="identifier"
