@@ -67,6 +67,39 @@
   margin-bottom: 0.25rem;
 }
 
+.groupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0.55rem 0.6rem;
+  margin-bottom: 0.25rem;
+  cursor: pointer;
+  border-radius: $border-radius;
+
+  &:hover {
+    background-color: var(--color-bg-tertiary);
+  }
+
+  .groupLabel {
+    padding: 0;
+    margin-bottom: 0;
+  }
+}
+
+.groupChevron {
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+  margin-right: 0.5rem;
+  transition: transform 0.15s ease;
+}
+
+.groupChevronOpen {
+  transform: rotate(180deg);
+}
+
 .items {
   display: flex;
   flex-direction: column;
@@ -74,6 +107,18 @@
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+.itemsCollapsible {
+  overflow: hidden;
+  transition: max-height 0.2s ease, opacity 0.15s ease;
+  max-height: 400px;
+  opacity: 1;
+}
+
+.itemsClosed {
+  max-height: 0;
+  opacity: 0;
 }
 
 .link {

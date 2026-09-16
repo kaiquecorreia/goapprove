@@ -137,13 +137,17 @@ export type NavigationItem = {
 };
 
 export type NavigationGroup = {
+  id: string;
   label: string;
+  collapsible?: boolean;
   items: NavigationItem[];
 };
 
 export const navigationGroups: NavigationGroup[] = [
   {
-    label: 'Operação',
+    id: 'approvals',
+    label: 'Aprovações',
+    collapsible: true,
     items: [
       {
         name: 'Dashboard',
@@ -166,7 +170,9 @@ export const navigationGroups: NavigationGroup[] = [
     ],
   },
   {
+    id: 'configuration',
     label: 'Configuração',
+    collapsible: true,
     items: [
       {
         name: 'Regras de Negócio',
@@ -189,6 +195,7 @@ export const navigationGroups: NavigationGroup[] = [
     ],
   },
   {
+    id: 'governance',
     label: 'Governança',
     items: [
       {
