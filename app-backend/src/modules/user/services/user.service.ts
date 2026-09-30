@@ -37,7 +37,7 @@ export class UserService {
       } catch (error) {
         if (this.isUniqueConstraintError(error)) {
           throw new ConflictException(
-            'A user with this email or external integration user already exists',
+            'A user with this email or ERP login already exists',
           );
         }
 
@@ -133,7 +133,7 @@ export class UserService {
       } catch (error) {
         if (this.isUniqueConstraintError(error)) {
           throw new ConflictException(
-            'A user with this email or external integration user already exists',
+            'A user with this email or ERP login already exists',
           );
         }
 

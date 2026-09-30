@@ -41,14 +41,12 @@ export class InMemoryUserRepository implements UserRepository {
       throw new Error('Unique constraint violation');
     }
 
-    if (data.externalIntegrationUser) {
-      const existingExternal = this.users.find(
-        (u) => u.externalIntegrationUser === data.externalIntegrationUser,
-      );
+    const existingExternal = this.users.find(
+      (u) => u.externalIntegrationUser === data.externalIntegrationUser,
+    );
 
-      if (existingExternal) {
-        throw new Error('Unique constraint violation');
-      }
+    if (existingExternal) {
+      throw new Error('Unique constraint violation');
     }
 
     const userId = uuidv4();
@@ -58,7 +56,7 @@ export class InMemoryUserRepository implements UserRepository {
       userId,
       name: data.name,
       email: data.email,
-      externalIntegrationUser: data.externalIntegrationUser ?? null,
+      externalIntegrationUser: data.externalIntegrationUser,
       role: data.role,
       active: data.active ?? true,
       approvalLimit:

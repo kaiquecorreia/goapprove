@@ -7,6 +7,7 @@ import { CompanyIntegrationRepository } from '../../onboarding/repositories/comp
 import { WorkflowRepository } from '../repositories/workflow.repository';
 import { WorkflowWithRelations } from '../types/workflow-with-relations';
 import { LnApiClient } from './ln-api-client';
+import { buildLnApprovalResult } from './ln-approval-result';
 
 @Injectable()
 export class LnSyncService {
@@ -49,7 +50,7 @@ export class LnSyncService {
         integration.clientSecret
           ? this.cryptoService.decrypt(integration.clientSecret)
           : null,
-        this.buildPayload(workflow),
+        buildLnApprovalResult(workflow),
       );
 
       await this.workflowRepository.updateWorkflow(workflow.workflowId, {
@@ -65,7 +66,7 @@ export class LnSyncService {
         companyId: workflow.purchaseOrder.companyId,
         severity: 'success',
         message: 'Resultado da aprovação enviado ao LN com sucesso.',
-        metadata: { workflowId: workflow.workflowId },
+        metadata: this.buildAuditMetadata(workflow),
       });
     } catch (error) {
       const message =
@@ -100,37 +101,16 @@ export class LnSyncService {
       companyId: workflow.purchaseOrder.companyId,
       severity: 'error',
       message,
-      metadata: { workflowId: workflow.workflowId },
+      metadata: this.buildAuditMetadata(workflow),
     });
   }
 
-  private buildPayload(workflow: WorkflowWithRelations) {
-    const decision = workflow.status === 'APPROVED' ? 'APPROVED' : 'REJECTED';
-
+  // requestId/batchId let a sync event be traced back to the LN request.
+  private buildAuditMetadata(workflow: WorkflowWithRelations) {
     return {
-      orderNumber: workflow.purchaseOrder.orderNumber,
-      companyExternalCode:
-        workflow.purchaseOrder.company.externalIntegrationCode,
-      decision,
-      decidedAt: (workflow.finalizedAt ?? new Date()).toISOString(),
-      approvals: workflow.levels.flatMap((level) =>
-        level.approvers
-          .filter((a) => a.status === 'APPROVED' || a.status === 'REJECTED')
-          .map((a) => {
-            const matchingDecision = level.decisions.find(
-              (d) => d.assignedUserId === a.userId,
-            );
-
-            return {
-              level: level.level,
-              userId: a.userId,
-              externalIntegrationUser: a.user.externalIntegrationUser,
-              decision: a.status,
-              comment: matchingDecision?.comment ?? null,
-              decidedAt: (a.decidedAt ?? new Date()).toISOString(),
-            };
-          }),
-      ),
-    } as const;
+      workflowId: workflow.workflowId,
+      requestId: workflow.purchaseOrder.requestId,
+      batchId: workflow.purchaseOrder.batchId,
+    };
   }
 }

@@ -28,11 +28,11 @@ export class CreateUserDto {
   @MaxLength(150)
   email!: string;
 
-  @ApiPropertyOptional({ maxLength: 50 })
-  @IsOptional()
+  @ApiProperty({ maxLength: 50, description: 'ERP login' })
   @IsString()
+  @IsNotEmpty()
   @MaxLength(50)
-  externalIntegrationUser?: string;
+  externalIntegrationUser!: string;
 
   @ApiProperty({ minLength: 8 })
   @IsString()

@@ -27,7 +27,7 @@ function buildUser(
     userId: 'target-1',
     name: 'Target',
     email: 'target@x.com',
-    externalIntegrationUser: null,
+    externalIntegrationUser: 'target',
     role: 'APPROVER',
     active: true,
     approvalLimit: null,
@@ -95,6 +95,7 @@ describe('UserService', () => {
         service.create({
           name: 'Owner',
           email: 'owner@x.com',
+          externalIntegrationUser: 'owner',
           password: 'password123',
           role: 'OWNER',
         }),
@@ -112,6 +113,7 @@ describe('UserService', () => {
         {
           name: 'New',
           email: 'new@x.com',
+          externalIntegrationUser: 'new',
           password: 'password123',
           role: 'APPROVER',
           companyIds: ['company-A'],
@@ -136,6 +138,7 @@ describe('UserService', () => {
           {
             name: 'New',
             email: 'new@x.com',
+            externalIntegrationUser: 'new',
             password: 'password123',
             role: 'APPROVER',
             companyIds: ['company-A', 'company-B'],
@@ -152,6 +155,7 @@ describe('UserService', () => {
           {
             name: 'New Admin',
             email: 'newadmin@x.com',
+            externalIntegrationUser: 'newadmin',
             password: 'password123',
             role: 'ADMINISTRATOR',
           },
@@ -171,6 +175,7 @@ describe('UserService', () => {
           {
             name: 'New Admin',
             email: 'newadmin@x.com',
+            externalIntegrationUser: 'newadmin',
             password: 'password123',
             role: 'ADMINISTRATOR',
           },

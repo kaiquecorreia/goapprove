@@ -2,21 +2,27 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 
-export interface LnApprovalEntry {
+export type LnDecision = 'APPROVED' | 'REJECTED';
+
+export interface LnApprover {
   level: number;
   userId: string;
-  externalIntegrationUser: string | null;
-  decision: string;
+  lnUserId: string;
+  name: string;
+  decision: LnDecision;
+  decisionDate: string;
   comment: string | null;
-  decidedAt: string;
 }
 
 export interface LnApprovalResultPayload {
-  orderNumber: string;
-  companyExternalCode: string;
-  decision: 'APPROVED' | 'REJECTED';
-  decidedAt: string;
-  approvals: LnApprovalEntry[];
+  companyCode: string;
+  requestId: string;
+  batchId: string;
+  purchaseOrderNumber: string;
+  decision: LnDecision;
+  decisionDate: string;
+  finalStatusPortal: LnDecision;
+  approvers: LnApprover[];
 }
 
 /**

@@ -33,7 +33,7 @@ export interface User {
   userId: string;
   name: string;
   email: string;
-  externalIntegrationUser: string | null;
+  externalIntegrationUser: string;
   role: EUserRole;
   active: boolean;
   approvalLimit: number | null;

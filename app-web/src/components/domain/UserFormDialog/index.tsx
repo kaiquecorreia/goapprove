@@ -117,7 +117,7 @@ export function UserFormDialog({
     const payload = {
       name: data.name,
       email: data.email,
-      externalIntegrationUser: data.externalIntegrationUser || undefined,
+      externalIntegrationUser: data.externalIntegrationUser,
       role: data.role,
       active: data.active,
       approvalLimit: data.approvalLimit,
@@ -179,12 +179,10 @@ export function UserFormDialog({
           </div>
 
           <div>
-            <Label htmlFor="externalIntegrationUser">
-              Usuário de integração (Infor) — opcional
-            </Label>
+            <Label htmlFor="externalIntegrationUser">Login do ERP</Label>
             <Input
               id="externalIntegrationUser"
-              placeholder="Preencha apenas para uso futuro do login via Infor"
+              placeholder="Ex: jsilva"
               error={errors.externalIntegrationUser?.message}
               {...register('externalIntegrationUser')}
             />

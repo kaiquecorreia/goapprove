@@ -24,6 +24,8 @@ export class PrismaPurchaseOrderRepository implements PurchaseOrderRepository {
         sourceSystem: dto.sourceSystem,
         eventType: dto.eventType,
         schemaVersion: dto.schemaVersion,
+        requestId: dto.requestId,
+        batchId: dto.batchId,
         sentAt: new Date(dto.sentAt),
         orderNumber: po.orderNumber,
         revision: po.revision,

@@ -10,6 +10,8 @@ x-internal-api-key: {{apiKey}}
   "sourceSystem": "INFOR_LN",
   "eventType": "PURCHASE_ORDER_SUBMITTED_FOR_APPROVAL",
   "schemaVersion": "1.0",
+  "requestId": "CKX-001-000001651-000001",
+  "batchId": "CKX-001-20260924-00001",
   "sentAt": "2026-06-16T10:30:00-03:00",
   "company": {
     "code": "ADMIN",
@@ -77,6 +79,8 @@ x-internal-api-key: {{apiKey}}
   "sourceSystem": "INFOR_LN",
   "eventType": "PURCHASE_ORDER_SUBMITTED_FOR_APPROVAL",
   "schemaVersion": "1.0",
+  "requestId": "CKX-001-000001651-000002",
+  "batchId": "CKX-001-20260924-00001",
   "sentAt": "2026-06-16T11:00:00-03:00",
   "company": {
     "code": "E2E_TEST_001",
@@ -144,6 +148,8 @@ x-internal-api-key: {{apiKey}}
   "sourceSystem": "INFOR_LN",
   "eventType": "PURCHASE_ORDER_SUBMITTED_FOR_APPROVAL",
   "schemaVersion": "1.0",
+  "requestId": "CKX-001-000001651-000003",
+  "batchId": "CKX-001-20260924-00001",
   "sentAt": "2026-06-16T10:30:00-03:00",
   "company": {
     "code": "INEXISTENTE"
@@ -177,6 +183,8 @@ Content-Type: application/json
   "sourceSystem": "INFOR_LN",
   "eventType": "PURCHASE_ORDER_SUBMITTED_FOR_APPROVAL",
   "schemaVersion": "1.0",
+  "requestId": "CKX-001-000001651-000004",
+  "batchId": "CKX-001-20260924-00001",
   "sentAt": "2026-06-16T10:30:00-03:00",
   "company": {
     "code": "001"
@@ -211,6 +219,8 @@ x-internal-api-key: {{apiKey}}
   "sourceSystem": "INFOR_LN",
   "eventType": "PURCHASE_ORDER_SUBMITTED_FOR_APPROVAL",
   "schemaVersion": "1.0",
+  "requestId": "CKX-001-000001651-000005",
+  "batchId": "CKX-001-20260924-00001",
   "sentAt": "2026-06-16T10:30:00-03:00",
   "company": {
     "code": "001"
@@ -224,4 +234,39 @@ x-internal-api-key: {{apiKey}}
     "totalAmount": 100.00
   },
   "lines": []
+}
+
+### Erro: payload inválido - sem requestId (esperado 400)
+POST {{baseUrl}}/purchase-orders
+Content-Type: application/json
+x-internal-api-key: {{apiKey}}
+
+{
+  "sourceSystem": "INFOR_LN",
+  "eventType": "PURCHASE_ORDER_SUBMITTED_FOR_APPROVAL",
+  "schemaVersion": "1.0",
+  "batchId": "CKX-001-20260924-00001",
+  "sentAt": "2026-06-16T10:30:00-03:00",
+  "company": {
+    "code": "001"
+  },
+  "purchaseOrder": {
+    "orderNumber": "OC-2026-000123",
+    "revision": 1,
+    "orderType": "NORMAL",
+    "statusLn": "PENDING_APPROVAL",
+    "createdAt": "2026-06-16T09:55:00-03:00",
+    "totalAmount": 100.00
+  },
+  "lines": [
+    {
+      "lineNumber": 10,
+      "itemCode": "MAT-0001",
+      "itemDescription": "Item teste",
+      "quantity": 1,
+      "unitOfMeasure": "UN",
+      "unitPrice": 100.00,
+      "lineAmount": 100.00
+    }
+  ]
 }

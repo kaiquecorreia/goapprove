@@ -3,7 +3,7 @@ import type { User } from '@/lib/mock/types';
 export interface UserPayload {
   name: string;
   email: string;
-  externalIntegrationUser?: string;
+  externalIntegrationUser: string;
   role: string;
   active?: boolean;
   approvalLimit?: number | null;

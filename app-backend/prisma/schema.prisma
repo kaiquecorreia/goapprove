@@ -54,7 +54,7 @@ model User {
   userId                  String   @id @default(uuid()) @map("user_id") @db.Uuid
   name                    String   @map("name") @db.VarChar(150)
   email                   String   @unique @map("email") @db.VarChar(150)
-  externalIntegrationUser String?  @unique @map("external_integration_user") @db.VarChar(50)
+  externalIntegrationUser String   @unique @map("external_integration_user") @db.VarChar(50)
   passwordHash            String?  @map("password_hash") @db.VarChar(255)
   role                    UserRole @map("role")
   active                  Boolean  @default(true) @map("active")
@@ -109,6 +109,8 @@ model PurchaseOrder {
   sourceSystem  String   @map("source_system") @db.VarChar(50)
   eventType     String   @map("event_type") @db.VarChar(100)
   schemaVersion String   @map("schema_version") @db.VarChar(20)
+  requestId     String   @map("request_id") @db.VarChar(100)
+  batchId       String   @map("batch_id") @db.VarChar(100)
   sentAt        DateTime @map("sent_at")
 
   orderNumber      String              @map("order_number") @db.VarChar(50)
@@ -140,6 +142,8 @@ model PurchaseOrder {
   workflow ApprovalWorkflow?
 
   @@index([companyId, orderNumber])
+  @@index([companyId, requestId])
+  @@index([companyId, batchId])
   @@index([companyId, erpCreatedAt])
   @@index([companyId, status, erpCreatedAt])
   @@map("purchase_orders")

@@ -20,6 +20,7 @@ async function main() {
   const email = process.env.SEED_ADMIN_EMAIL ?? 'kaique.rc.tl@gmail.com';
   const password = process.env.SEED_ADMIN_PASSWORD ?? 'ChangeMe123!';
   const name = process.env.SEED_ADMIN_NAME ?? 'Administrator';
+  const erpLogin = process.env.SEED_ADMIN_ERP_LOGIN ?? 'admin';
 
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
@@ -29,6 +30,7 @@ async function main() {
     create: {
       name,
       email,
+      externalIntegrationUser: erpLogin,
       passwordHash,
       role: UserRole.ADMINISTRATOR,
       active: true,

@@ -217,6 +217,24 @@ export class ReceivePurchaseOrderDto {
   @MaxLength(20)
   schemaVersion!: string;
 
+  @ApiProperty({
+    maxLength: 100,
+    description: 'Unique id of this request, echoed back to the ERP',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  requestId!: string;
+
+  @ApiProperty({
+    maxLength: 100,
+    description: 'Id of the send batch, echoed back to the ERP',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  batchId!: string;
+
   @ApiProperty()
   @IsISO8601()
   sentAt!: string;

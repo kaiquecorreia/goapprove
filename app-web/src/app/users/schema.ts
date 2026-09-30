@@ -15,9 +15,8 @@ const baseUserSchema = z.object({
   email: z.string().email('E-mail inválido').max(150, 'Máximo de 150 caracteres'),
   externalIntegrationUser: z
     .string()
-    .max(50, 'Máximo de 50 caracteres')
-    .optional()
-    .or(z.literal('')),
+    .min(1, 'Informe o login do ERP')
+    .max(50, 'Máximo de 50 caracteres'),
   password: z.string().optional().or(z.literal('')),
   confirmPassword: z.string().optional().or(z.literal('')),
   role: z.nativeEnum(EUserRole, { errorMap: () => ({ message: 'Selecione um perfil' }) }),

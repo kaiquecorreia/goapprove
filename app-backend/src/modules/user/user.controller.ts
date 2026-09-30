@@ -49,7 +49,7 @@ export class UserController {
   @ApiResponse({ status: 201, description: 'User created successfully' })
   @ApiResponse({
     status: 409,
-    description: 'Email or external integration user already exists',
+    description: 'Email or ERP login already exists',
   })
   create(
     @Body() data: CreateUserDto,
@@ -90,7 +90,7 @@ export class UserController {
   @ApiResponse({ status: 404, description: 'User not found' })
   @ApiResponse({
     status: 409,
-    description: 'Email or external integration user already exists',
+    description: 'Email or ERP login already exists',
   })
   update(
     @Param('userId', new ParseUUIDPipe({ version: '4' })) userId: string,
