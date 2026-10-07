@@ -11,4 +11,13 @@ export abstract class PurchaseOrderRepository {
     companyId: string,
     dto: ReceivePurchaseOrderDto,
   ): Promise<PurchaseOrderWithLines>;
+  abstract findLatestByOrderNumber(
+    companyId: string,
+    orderNumber: string,
+  ): Promise<PurchaseOrderWithLines | null>;
+  /** Overwrites header and lines with the new event and resets status to PENDING. */
+  abstract update(
+    purchaseOrderId: string,
+    dto: ReceivePurchaseOrderDto,
+  ): Promise<PurchaseOrderWithLines>;
 }
