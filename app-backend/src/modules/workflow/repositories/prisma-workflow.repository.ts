@@ -329,6 +329,12 @@ export class PrismaWorkflowRepository implements WorkflowRepository {
     return { ...workflow, auditEvents: [] };
   }
 
+  async deleteByPurchaseOrderId(purchaseOrderId: string): Promise<void> {
+    await this.prismaService
+      .getClient()
+      .approvalWorkflow.deleteMany({ where: { purchaseOrderId } });
+  }
+
   async updatePurchaseOrderStatus(
     purchaseOrderId: string,
     status: Prisma.PurchaseOrderUpdateInput['status'],

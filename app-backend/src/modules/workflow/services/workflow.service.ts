@@ -1,4 +1,5 @@
 import {
+  BadGatewayException,
   BadRequestException,
   ConflictException,
   ForbiddenException,
@@ -26,7 +27,11 @@ import {
   ApprovalWorkflowLevelWithRelations,
   WorkflowWithRelations,
 } from '../types/workflow-with-relations';
-import { LnSyncService } from './ln-sync.service';
+import { LnSyncError, LnSyncService } from './ln-sync.service';
+
+// Covers the LN round trip (SSO token + ApprovalResponse, 15s timeout each)
+// that now runs inside the decision's transaction; Prisma's default is 5s.
+const DECISION_TRANSACTION_TIMEOUT_MS = 45_000;
 
 @Injectable()
 export class WorkflowService {
@@ -49,32 +54,7 @@ export class WorkflowService {
       }
 
       if (!ruleMatch) {
-        const workflow = await this.workflowRepository.create({
-          purchaseOrderId,
-          ruleId: null,
-          status: 'NO_RULE',
-          currentLevel: null,
-          requireCommentOnApprove: false,
-          requireCommentOnReject: true,
-          levels: [],
-        });
-
-        this.auditService.log({
-          action: 'workflow.no_rule_matched',
-          entity: 'PurchaseOrder',
-          entityId: purchaseOrderId,
-          severity: 'warning',
-          message:
-            'Nenhuma regra ativa correspondeu a esta OC; atribuição manual necessária.',
-          metadata: { workflowId: workflow.workflowId },
-        });
-
-        await this.workflowRepository.updatePurchaseOrderStatus(
-          purchaseOrderId,
-          'NO_RULE',
-        );
-
-        return workflow;
+        return this.startRejectedNoRuleWorkflow(purchaseOrderId);
       }
 
       const firstLevel = ruleMatch.levels[0]?.levelNumber ?? 1;
@@ -109,10 +89,48 @@ export class WorkflowService {
       return workflow;
     });
 
-    if (workflow.status === 'APPROVED') {
+    // Auto-approved and no-rule (auto-rejected) workflows are born finalized.
+    if (workflow.status === 'APPROVED' || workflow.status === 'REJECTED') {
       await this.lnSyncService.sendResult(workflow.workflowId);
       return this.fetchByPurchaseOrderId(purchaseOrderId);
     }
+
+    return workflow;
+  }
+
+  private async startRejectedNoRuleWorkflow(
+    purchaseOrderId: string,
+  ): Promise<WorkflowWithRelations> {
+    const workflow = await this.workflowRepository.create({
+      purchaseOrderId,
+      ruleId: null,
+      status: 'REJECTED',
+      currentLevel: null,
+      requireCommentOnApprove: false,
+      requireCommentOnReject: true,
+      levels: [],
+    });
+
+    await this.workflowRepository.updateWorkflow(workflow.workflowId, {
+      finalizedAt: new Date(),
+      lnSyncStatus: 'PENDING',
+    });
+
+    this.auditService.log({
+      action: 'workflow.auto_rejected_no_rule',
+      entity: 'PurchaseOrder',
+      entityId: purchaseOrderId,
+      severity: 'error',
+      message:
+        'Nenhuma regra ativa correspondeu a esta OC; rejeitada automaticamente.',
+      metadata: { workflowId: workflow.workflowId },
+      critical: true,
+    });
+
+    await this.workflowRepository.updatePurchaseOrderStatus(
+      purchaseOrderId,
+      'REJECTED',
+    );
 
     return workflow;
   }
@@ -302,156 +320,189 @@ export class WorkflowService {
     return { ...result, page, limit };
   }
 
+  // A decision that finalizes the workflow is only committed once LN accepts
+  // it: the LN call runs inside the transaction, so a failure rolls back the
+  // decision and the approver gets the error to try again.
   async recordDecision(
     input: RecordDecisionInput,
   ): Promise<WorkflowWithRelations> {
-    const finalized = await this.transactionService.run(async () => {
-      const workflow = await this.workflowRepository.findByPurchaseOrderId(
-        input.purchaseOrderId,
-      );
+    // Held in an object: TS doesn't track assignments made inside callbacks.
+    const attempt: { workflow?: WorkflowWithRelations } = {};
 
-      if (!workflow) {
-        throw new NotFoundException(
-          `No workflow found for purchase order ${input.purchaseOrderId}`,
+    try {
+      await this.transactionService.run(
+        () => this.applyDecision(input, attempt),
+        { timeout: DECISION_TRANSACTION_TIMEOUT_MS },
+      );
+    } catch (error) {
+      if (error instanceof LnSyncError && attempt.workflow) {
+        await this.lnSyncService.recordBlockedDecision(attempt.workflow, error);
+        throw new BadGatewayException(
+          `A decisão não foi registrada porque o envio ao LN falhou: ${error.message}`,
         );
       }
 
-      if (workflow.status !== 'PENDING') {
-        throw new ConflictException(
-          `Workflow is already finalized (status: ${workflow.status})`,
-        );
-      }
-
-      const currentLevel = workflow.levels.find(
-        (level) => level.level === workflow.currentLevel,
-      );
-
-      if (!currentLevel) {
-        throw new ConflictException('No active approval level');
-      }
-
-      const assignedUserId = await this.resolveActingApprover(
-        currentLevel.approvers,
-        input.actingUserId,
-        input.onBehalfOfUserId,
-      );
-
-      const requiresComment =
-        (input.decision === 'REJECTED' && workflow.requireCommentOnReject) ||
-        (input.decision === 'APPROVED' && workflow.requireCommentOnApprove);
-
-      if (requiresComment && !input.comment?.trim()) {
-        throw new BadRequestException('Comment is required for this decision');
-      }
-
-      const now = new Date();
-
-      await this.workflowRepository.createDecision({
-        levelId: currentLevel.levelId,
-        assignedUserId,
-        actingUserId: input.actingUserId,
-        decision: input.decision,
-        comment: input.comment,
-      });
-
-      const approverStatus: LevelStatus =
-        input.decision === 'APPROVED' ? 'APPROVED' : 'REJECTED';
-
-      await this.workflowRepository.updateApproverStatus(
-        currentLevel.levelId,
-        assignedUserId,
-        approverStatus,
-        now,
-      );
-
-      const decidedApprover = currentLevel.approvers.find(
-        (approver) => approver.userId === assignedUserId,
-      );
-
-      this.auditService.log({
-        action: 'workflow.decision_recorded',
-        entity: 'PurchaseOrder',
-        entityId: workflow.purchaseOrderId,
-        companyId: workflow.purchaseOrder.companyId,
-        severity: input.decision === 'APPROVED' ? 'success' : 'warning',
-        message: `${input.decision === 'APPROVED' ? 'Aprovação' : 'Rejeição'} registrada no nível ${currentLevel.level}`,
-        metadata: {
-          workflowId: workflow.workflowId,
-          assignedUserId,
-          assignedUserName: decidedApprover?.user.name,
-          levelId: currentLevel.levelId,
-        },
-        // Compliance-critical: must be durable before the response returns.
-        critical: true,
-      });
-
-      if (input.decision === 'REJECTED') {
-        await this.finalizeWorkflow(workflow, currentLevel, 'REJECTED', now);
-        return true;
-      }
-
-      const updatedApprovers = currentLevel.approvers.map((approver) =>
-        approver.userId === assignedUserId
-          ? { ...approver, status: approverStatus, decidedAt: now }
-          : approver,
-      );
-
-      if (this.isLevelCleared(currentLevel.mode, updatedApprovers)) {
-        await this.workflowRepository.updateLevelStatus(currentLevel.levelId, {
-          status: 'APPROVED',
-          completedAt: now,
-        });
-
-        const nextLevel = workflow.levels.find(
-          (level) => level.level === currentLevel.level + 1,
-        );
-
-        if (nextLevel) {
-          await this.workflowRepository.activateLevel(
-            nextLevel.levelId,
-            nextLevel.mode,
-          );
-          await this.workflowRepository.updateWorkflow(workflow.workflowId, {
-            currentLevel: nextLevel.level,
-          });
-          this.auditService.log({
-            action: 'workflow.level_unlocked',
-            entity: 'PurchaseOrder',
-            entityId: workflow.purchaseOrderId,
-            companyId: workflow.purchaseOrder.companyId,
-            severity: 'info',
-            message: `Nível ${nextLevel.level} liberado`,
-            metadata: {
-              workflowId: workflow.workflowId,
-              levelId: nextLevel.levelId,
-            },
-          });
-
-          return false;
-        }
-
-        await this.finalizeWorkflow(workflow, currentLevel, 'APPROVED', now);
-        return true;
-      }
-
-      if (currentLevel.mode === 'SEQUENTIAL' && decidedApprover) {
-        await this.workflowRepository.unlockNextApprover(
-          currentLevel.levelId,
-          decidedApprover.sequenceOrder,
-        );
-      }
-
-      return false;
-    });
-
-    const result = await this.fetchByPurchaseOrderId(input.purchaseOrderId);
-
-    if (finalized) {
-      await this.lnSyncService.sendResult(result.workflowId);
-      return this.fetchByPurchaseOrderId(input.purchaseOrderId);
+      throw error;
     }
 
-    return result;
+    return this.fetchByPurchaseOrderId(input.purchaseOrderId);
+  }
+
+  private async applyDecision(
+    input: RecordDecisionInput,
+    attempt: { workflow?: WorkflowWithRelations },
+  ): Promise<void> {
+    const workflow = await this.workflowRepository.findByPurchaseOrderId(
+      input.purchaseOrderId,
+    );
+
+    if (!workflow) {
+      throw new NotFoundException(
+        `No workflow found for purchase order ${input.purchaseOrderId}`,
+      );
+    }
+
+    attempt.workflow = workflow;
+
+    if (workflow.status !== 'PENDING') {
+      throw new ConflictException(
+        `Workflow is already finalized (status: ${workflow.status})`,
+      );
+    }
+
+    const currentLevel = workflow.levels.find(
+      (level) => level.level === workflow.currentLevel,
+    );
+
+    if (!currentLevel) {
+      throw new ConflictException('No active approval level');
+    }
+
+    const assignedUserId = await this.resolveActingApprover(
+      currentLevel.approvers,
+      input.actingUserId,
+      input.onBehalfOfUserId,
+    );
+
+    const requiresComment =
+      (input.decision === 'REJECTED' && workflow.requireCommentOnReject) ||
+      (input.decision === 'APPROVED' && workflow.requireCommentOnApprove);
+
+    if (requiresComment && !input.comment?.trim()) {
+      throw new BadRequestException('Comment is required for this decision');
+    }
+
+    const now = new Date();
+
+    await this.workflowRepository.createDecision({
+      levelId: currentLevel.levelId,
+      assignedUserId,
+      actingUserId: input.actingUserId,
+      decision: input.decision,
+      comment: input.comment,
+    });
+
+    const approverStatus: LevelStatus =
+      input.decision === 'APPROVED' ? 'APPROVED' : 'REJECTED';
+
+    await this.workflowRepository.updateApproverStatus(
+      currentLevel.levelId,
+      assignedUserId,
+      approverStatus,
+      now,
+    );
+
+    const decidedApprover = currentLevel.approvers.find(
+      (approver) => approver.userId === assignedUserId,
+    );
+
+    this.auditService.log({
+      action: 'workflow.decision_recorded',
+      entity: 'PurchaseOrder',
+      entityId: workflow.purchaseOrderId,
+      companyId: workflow.purchaseOrder.companyId,
+      severity: input.decision === 'APPROVED' ? 'success' : 'warning',
+      message: `${input.decision === 'APPROVED' ? 'Aprovação' : 'Rejeição'} registrada no nível ${currentLevel.level}`,
+      metadata: {
+        workflowId: workflow.workflowId,
+        assignedUserId,
+        assignedUserName: decidedApprover?.user.name,
+        levelId: currentLevel.levelId,
+      },
+      // Compliance-critical: must be durable before the response returns.
+      critical: true,
+    });
+
+    if (input.decision === 'REJECTED') {
+      await this.finalizeWorkflow(workflow, currentLevel, 'REJECTED', now);
+      await this.deliverFinalDecision(workflow.workflowId);
+      return;
+    }
+
+    const updatedApprovers = currentLevel.approvers.map((approver) =>
+      approver.userId === assignedUserId
+        ? { ...approver, status: approverStatus, decidedAt: now }
+        : approver,
+    );
+
+    if (this.isLevelCleared(currentLevel.mode, updatedApprovers)) {
+      await this.workflowRepository.updateLevelStatus(currentLevel.levelId, {
+        status: 'APPROVED',
+        completedAt: now,
+      });
+
+      const nextLevel = workflow.levels.find(
+        (level) => level.level === currentLevel.level + 1,
+      );
+
+      if (nextLevel) {
+        await this.workflowRepository.activateLevel(
+          nextLevel.levelId,
+          nextLevel.mode,
+        );
+        await this.workflowRepository.updateWorkflow(workflow.workflowId, {
+          currentLevel: nextLevel.level,
+        });
+        this.auditService.log({
+          action: 'workflow.level_unlocked',
+          entity: 'PurchaseOrder',
+          entityId: workflow.purchaseOrderId,
+          companyId: workflow.purchaseOrder.companyId,
+          severity: 'info',
+          message: `Nível ${nextLevel.level} liberado`,
+          metadata: {
+            workflowId: workflow.workflowId,
+            levelId: nextLevel.levelId,
+          },
+        });
+
+        return;
+      }
+
+      await this.finalizeWorkflow(workflow, currentLevel, 'APPROVED', now);
+      await this.deliverFinalDecision(workflow.workflowId);
+      return;
+    }
+
+    if (currentLevel.mode === 'SEQUENTIAL' && decidedApprover) {
+      await this.workflowRepository.unlockNextApprover(
+        currentLevel.levelId,
+        decidedApprover.sequenceOrder,
+      );
+    }
+  }
+
+  // Runs inside the decision's transaction, so it reads the just-finalized
+  // (uncommitted) workflow, and an LnSyncError thrown here rolls it all back.
+  private async deliverFinalDecision(workflowId: string): Promise<void> {
+    const finalized = await this.workflowRepository.findById(workflowId);
+
+    if (!finalized) {
+      throw new NotFoundException(`Workflow ${workflowId} not found`);
+    }
+
+    const details = await this.lnSyncService.send(finalized);
+    await this.lnSyncService.markSynced(finalized, details);
   }
 
   async retryLnSync(

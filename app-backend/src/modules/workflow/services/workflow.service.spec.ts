@@ -1,4 +1,5 @@
-import { LnSyncService } from './ln-sync.service';
+import { BadGatewayException, NotFoundException } from '@nestjs/common';
+import { LnSyncError, LnSyncService } from './ln-sync.service';
 import { WorkflowService } from './workflow.service';
 import { WorkflowRepository } from '../repositories/workflow.repository';
 import { UserRepository } from '../../user/repositories/user.repository';
@@ -61,7 +62,12 @@ describe('WorkflowService', () => {
   let workflowRepository: jest.Mocked<WorkflowRepository>;
   let userRepository: jest.Mocked<Pick<UserRepository, 'findById'>>;
   let transactionService: { run: jest.Mock };
-  let lnSyncService: jest.Mocked<Pick<LnSyncService, 'sendResult'>>;
+  let lnSyncService: jest.Mocked<
+    Pick<
+      LnSyncService,
+      'sendResult' | 'send' | 'markSynced' | 'recordBlockedDecision'
+    >
+  >;
   let companyAccessService: jest.Mocked<
     Pick<
       CompanyAccessService,
@@ -84,12 +90,18 @@ describe('WorkflowService', () => {
       activateLevel: jest.fn(),
       unlockNextApprover: jest.fn(),
       updateWorkflow: jest.fn(),
+      deleteByPurchaseOrderId: jest.fn(),
       updatePurchaseOrderStatus: jest.fn(),
     };
 
     userRepository = { findById: jest.fn().mockResolvedValue(null) };
     transactionService = { run: jest.fn((fn: () => Promise<unknown>) => fn()) };
-    lnSyncService = { sendResult: jest.fn().mockResolvedValue(undefined) };
+    lnSyncService = {
+      sendResult: jest.fn().mockResolvedValue(undefined),
+      send: jest.fn().mockResolvedValue(undefined),
+      markSynced: jest.fn().mockResolvedValue(undefined),
+      recordBlockedDecision: jest.fn().mockResolvedValue(undefined),
+    };
     companyAccessService = {
       getAccessibleCompanyIds: jest.fn().mockResolvedValue(null),
       assertCompanyAccess: jest.fn().mockResolvedValue(undefined),
@@ -104,6 +116,9 @@ describe('WorkflowService', () => {
       companyAccessService as unknown as CompanyAccessService,
       auditService as unknown as AuditService,
     );
+
+    // deliverFinalDecision re-reads the finalized workflow inside the transaction.
+    workflowRepository.findById.mockResolvedValue(buildWorkflow());
   });
 
   describe('recordDecision', () => {
@@ -158,7 +173,7 @@ describe('WorkflowService', () => {
           currentLevel: 2,
         },
       );
-      expect(lnSyncService.sendResult).not.toHaveBeenCalled();
+      expect(lnSyncService.send).not.toHaveBeenCalled();
     });
 
     it('ALL: aprovação parcial não libera o nível', async () => {
@@ -184,7 +199,7 @@ describe('WorkflowService', () => {
 
       expect(workflowRepository.updateLevelStatus).not.toHaveBeenCalled();
       expect(workflowRepository.updateWorkflow).not.toHaveBeenCalled();
-      expect(lnSyncService.sendResult).not.toHaveBeenCalled();
+      expect(lnSyncService.send).not.toHaveBeenCalled();
     });
 
     it('ALL: última aprovação libera o nível e finaliza o workflow quando não há próximo nível', async () => {
@@ -228,7 +243,10 @@ describe('WorkflowService', () => {
         'po-1',
         'APPROVED',
       );
-      expect(lnSyncService.sendResult).toHaveBeenCalledWith('workflow-1');
+      expect(lnSyncService.send).toHaveBeenCalledWith(
+        expect.objectContaining({ workflowId: 'workflow-1' }),
+      );
+      expect(lnSyncService.markSynced).toHaveBeenCalled();
     });
 
     it('SEQUENTIAL: aprovar desbloqueia o próximo aprovador da sequência, sem liberar o nível', async () => {
@@ -265,7 +283,7 @@ describe('WorkflowService', () => {
         1,
       );
       expect(workflowRepository.updateLevelStatus).not.toHaveBeenCalled();
-      expect(lnSyncService.sendResult).not.toHaveBeenCalled();
+      expect(lnSyncService.send).not.toHaveBeenCalled();
     });
 
     it('REJECTED encerra o workflow imediatamente, independente do nível/modo', async () => {
@@ -307,7 +325,10 @@ describe('WorkflowService', () => {
         },
       );
       expect(workflowRepository.activateLevel).not.toHaveBeenCalled();
-      expect(lnSyncService.sendResult).toHaveBeenCalledWith('workflow-1');
+      expect(lnSyncService.send).toHaveBeenCalledWith(
+        expect.objectContaining({ workflowId: 'workflow-1' }),
+      );
+      expect(lnSyncService.markSynced).toHaveBeenCalled();
     });
 
     it('exige comentário na rejeição quando requireCommentOnReject é true (padrão)', async () => {
@@ -379,34 +400,115 @@ describe('WorkflowService', () => {
         }),
       ).rejects.toThrow('Workflow is already finalized');
     });
+
+    describe('quando o envio ao LN falha na decisão final', () => {
+      const finalApproval = () =>
+        service.recordDecision({
+          purchaseOrderId: 'po-1',
+          actingUserId: 'approverA',
+          decision: 'APPROVED',
+          comment: 'ok',
+        });
+
+      const lnError = new LnSyncError(
+        'Falha ao enviar resultado ao LN: HTTP 400',
+        {
+          stage: 'APPROVAL_RESPONSE',
+          method: 'POST',
+          url: 'https://ionapi/TENANT/LN/lnapi/odata/txckx.Goapprove/ApprovalResponse',
+          httpStatus: 400,
+          responseBody: { error: 'Bad Request' },
+          durationMs: 120,
+          payload: {} as never,
+        },
+      );
+
+      beforeEach(() => {
+        workflowRepository.findByPurchaseOrderId.mockResolvedValue(
+          buildWorkflow(),
+        );
+        lnSyncService.send.mockRejectedValue(lnError);
+      });
+
+      it('falha a decisão com 502, sem marcar como sincronizado', async () => {
+        await expect(finalApproval()).rejects.toBeInstanceOf(
+          BadGatewayException,
+        );
+        expect(lnSyncService.markSynced).not.toHaveBeenCalled();
+      });
+
+      it('envia ao LN dentro da transação da decisão, com timeout estendido', async () => {
+        await expect(finalApproval()).rejects.toThrow(
+          /A decisão não foi registrada.*HTTP 400/,
+        );
+        expect(transactionService.run).toHaveBeenCalledWith(
+          expect.any(Function),
+          { timeout: 45_000 },
+        );
+      });
+
+      it('registra a tentativa bloqueada na auditoria', async () => {
+        await expect(finalApproval()).rejects.toThrow();
+        expect(lnSyncService.recordBlockedDecision).toHaveBeenCalledWith(
+          expect.objectContaining({ workflowId: 'workflow-1' }),
+          lnError,
+        );
+      });
+    });
+
+    it('erros que não são do LN são propagados sem auditoria de bloqueio', async () => {
+      workflowRepository.findByPurchaseOrderId.mockResolvedValue(null);
+
+      await expect(
+        service.recordDecision({
+          purchaseOrderId: 'po-1',
+          actingUserId: 'approverA',
+          decision: 'APPROVED',
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(lnSyncService.recordBlockedDecision).not.toHaveBeenCalled();
+    });
   });
 
   describe('startWorkflow', () => {
-    it('cria um workflow NO_RULE quando nenhuma regra casou', async () => {
-      workflowRepository.create.mockResolvedValue(
-        buildWorkflow({ status: 'NO_RULE' }),
-      );
+    it('sem regra: rejeita a OC automaticamente e sincroniza com o LN', async () => {
+      const rejected = buildWorkflow({
+        status: 'REJECTED',
+        currentLevel: null,
+        levels: [],
+      });
+      workflowRepository.create.mockResolvedValue(rejected);
+      workflowRepository.findByPurchaseOrderId.mockResolvedValue(rejected);
 
       await service.startWorkflow('po-1', null);
 
       expect(workflowRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          status: 'NO_RULE',
+          status: 'REJECTED',
           ruleId: null,
           levels: [],
         }),
       );
+      expect(workflowRepository.updateWorkflow).toHaveBeenCalledWith(
+        'workflow-1',
+        expect.objectContaining({
+          lnSyncStatus: 'PENDING',
+          finalizedAt: expect.any(Date),
+        }),
+      );
       expect(auditService.log).toHaveBeenCalledWith(
         expect.objectContaining({
-          action: 'workflow.no_rule_matched',
+          action: 'workflow.auto_rejected_no_rule',
           entity: 'PurchaseOrder',
           entityId: 'po-1',
+          critical: true,
         }),
       );
       expect(workflowRepository.updatePurchaseOrderStatus).toHaveBeenCalledWith(
         'po-1',
-        'NO_RULE',
+        'REJECTED',
       );
+      expect(lnSyncService.sendResult).toHaveBeenCalledWith('workflow-1');
     });
 
     it('cria um workflow PENDING com os níveis da regra casada', async () => {

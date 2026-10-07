@@ -120,6 +120,8 @@ export abstract class WorkflowRepository {
     workflowId: string,
     data: UpdateWorkflowInput,
   ): Promise<WorkflowWithRelations>;
+  /** Cascades to levels, approvers and decisions. */
+  abstract deleteByPurchaseOrderId(purchaseOrderId: string): Promise<void>;
   abstract updatePurchaseOrderStatus(
     purchaseOrderId: string,
     status: PurchaseOrderStatus,

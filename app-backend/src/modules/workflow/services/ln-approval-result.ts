@@ -47,7 +47,9 @@ export function buildLnApprovalResult(
           name: approver.user.name,
           decision: approver.status,
           decisionDate: (approver.decidedAt ?? new Date()).toISOString(),
-          comment: matchingDecision?.comment ?? null,
+          // LN's ApprovalResponse action rejects a null comment, so an
+          // approval made without one is sent as an empty string.
+          comment: matchingDecision?.comment ?? '',
         };
       }),
     ),

@@ -28,8 +28,17 @@ describe('TransactionService', () => {
     prismaService.runInTransaction.mockResolvedValue(fakeResult);
     const fn = jest.fn().mockResolvedValue(fakeResult);
     const result = await service.run(fn);
-    expect(prismaService.runInTransaction).toHaveBeenCalledWith(fn);
+    expect(prismaService.runInTransaction).toHaveBeenCalledWith(fn, undefined);
     expect(result).toEqual(fakeResult);
+  });
+
+  it('repassa as opções (ex.: timeout) para a transação externa', async () => {
+    clsService.prismaTransaction.getStore.mockReturnValue(undefined);
+    const fn = jest.fn();
+    await service.run(fn, { timeout: 45_000 });
+    expect(prismaService.runInTransaction).toHaveBeenCalledWith(fn, {
+      timeout: 45_000,
+    });
   });
 
   it('reutiliza transação existente e chama fn() diretamente', async () => {

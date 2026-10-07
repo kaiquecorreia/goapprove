@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from './prisma.service';
+import { PrismaService, TransactionOptions } from './prisma.service';
 import { ClsService } from './cls.service';
 
 @Injectable()
@@ -9,12 +9,14 @@ export class TransactionService {
     private readonly clsService: ClsService,
   ) {}
 
-  async run<T>(fn: () => Promise<T>): Promise<T> {
+  // options only apply to the outermost call: a nested run() joins the
+  // transaction already open, with whatever timeout it was given.
+  async run<T>(fn: () => Promise<T>, options?: TransactionOptions): Promise<T> {
     const existing = this.clsService.prismaTransaction.getStore();
     if (existing) {
       return fn();
     }
-    return this.prismaService.runInTransaction(fn);
+    return this.prismaService.runInTransaction(fn, options);
   }
 
   isActive(): boolean {

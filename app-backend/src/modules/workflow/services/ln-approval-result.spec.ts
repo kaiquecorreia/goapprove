@@ -184,7 +184,7 @@ describe('buildLnApprovalResult', () => {
         level: 1,
         lnUserId: 'jsilva',
         decision: 'APPROVED',
-        comment: null,
+        comment: '',
       }),
       expect.objectContaining({
         level: 2,

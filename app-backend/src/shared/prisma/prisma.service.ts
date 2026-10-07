@@ -6,6 +6,11 @@ import { Pool } from 'pg';
 import { ClsService } from './cls.service';
 import { isDatabaseSslEnabled } from './database-ssl';
 
+export interface TransactionOptions {
+  /** Max time (ms) the transaction may run. Prisma's default is 5s. */
+  timeout?: number;
+}
+
 @Injectable()
 export class PrismaService implements OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
@@ -47,14 +52,17 @@ export class PrismaService implements OnModuleDestroy {
     return this.prisma;
   }
 
-  async runInTransaction<T>(fn: () => Promise<T>): Promise<T> {
+  async runInTransaction<T>(
+    fn: () => Promise<T>,
+    options?: TransactionOptions,
+  ): Promise<T> {
     const hooks: Array<() => void> = [];
 
     const result = await this.prisma.$transaction(async (tx) => {
       return this.clsService.prismaTransaction.run(tx, () =>
         this.clsService.transactionHooks.run(hooks, fn),
       );
-    });
+    }, options);
 
     // Only reached once the transaction committed.
     for (const hook of hooks) {
