@@ -1,17 +1,16 @@
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Card, CardContent } from '@/components/ui/Card';
+import { QuoteRequestForm } from '@/components/domain/QuoteRequestForm';
 import styles from './styles.module.scss';
 
 export default function NewQuotePage() {
   return (
     <div className={styles.page}>
-      <PageHeader title="Nova Cotação" description="Criação de uma nova cotação." />
+      <PageHeader
+        title="Solicitação de Cotação"
+        description="Preencha as informações da solicitação de cotação para envio aos fornecedores."
+      />
 
-      <Card>
-        <CardContent>
-          <p className={styles.stateMessage}>Em breve.</p>
-        </CardContent>
-      </Card>
+      <QuoteRequestForm />
     </div>
   );
 }
