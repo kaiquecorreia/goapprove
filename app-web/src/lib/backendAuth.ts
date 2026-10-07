@@ -26,13 +26,16 @@ export const getBackendAccessToken = cache(
   },
 );
 
-// Infor sessions have `externalIntegrationUser` set and their `accessToken`
-// (if any) is the *Infor* OAuth token, not ours — always double-hop through
-// /auth/callback for them, same as before. Password-based (Credentials)
-// sessions never get `externalIntegrationUser` set (see lib/auth.ts) and
-// already carry our own backend JWT from sign-in time, so we can use it
-// directly without minting a new one per request.
+// Password-based (Credentials) sessions already carry our own backend JWT from
+// sign-in time, so it's used directly. Infor sessions' `accessToken` (if any)
+// is the *Infor* OAuth token, not ours — they double-hop through
+// /auth/callback. Both kinds now carry `externalIntegrationUser`, so the
+// login method is told apart by `authMethod`, never by that field.
 export async function resolveBackendAccessToken(session: Session): Promise<string> {
+  if (session.authMethod === 'credentials' && session.accessToken) {
+    return session.accessToken;
+  }
+
   if (session.externalIntegrationUser) {
     return getBackendAccessToken(session.externalIntegrationUser);
   }

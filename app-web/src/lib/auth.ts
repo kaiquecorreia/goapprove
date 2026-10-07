@@ -72,6 +72,7 @@ interface BackendLoginResponse {
   role: EUserRole;
   email: string;
   companyId?: string;
+  externalIntegrationUser: string;
 }
 
 // req.headers here are the browser's own headers on the NextAuth callback
@@ -123,6 +124,7 @@ const credentialsProvider = CredentialsProvider({
         email: data.email,
         role: data.role,
         companyId: data.companyId,
+        externalIntegrationUser: data.externalIntegrationUser,
         accessToken: data.accessToken,
       };
     } catch {
@@ -144,6 +146,14 @@ const baseCallbacks: NextAuthOptions['callbacks'] = {
       token.name = user.name;
       token.role = user.role;
       token.companyId = user.companyId;
+      token.externalIntegrationUser = user.externalIntegrationUser;
+      token.authMethod = 'credentials';
+      return token;
+    }
+
+    // A password session keeps its identity even if a leftover Infor lookup
+    // cookie is around (e.g. /login/infor was visited before).
+    if (token.authMethod === 'credentials') {
       return token;
     }
 
@@ -152,6 +162,7 @@ const baseCallbacks: NextAuthOptions['callbacks'] = {
       token.companyId = loginContext.companyId;
       token.role = loginContext.role as EUserRole;
       token.externalIntegrationUser = loginContext.externalIntegrationUser;
+      token.authMethod = 'infor';
     }
 
     return token;
@@ -161,6 +172,7 @@ const baseCallbacks: NextAuthOptions['callbacks'] = {
     if (token.accessToken) session.accessToken = token.accessToken as string;
     if (token.companyId) session.companyId = token.companyId as string;
     if (token.role) session.role = token.role as EUserRole;
+    if (token.authMethod) session.authMethod = token.authMethod;
     if (token.externalIntegrationUser) {
       session.externalIntegrationUser = token.externalIntegrationUser as string;
     }

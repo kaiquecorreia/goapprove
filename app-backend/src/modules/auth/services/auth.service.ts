@@ -80,6 +80,9 @@ export class AuthService {
       role: user.role,
       email: user.email,
       companyId: defaultCompanyUser?.companyId,
+      // The web session needs it to act on endpoints that authorize by ERP
+      // login (e.g. /onboarding/company/:id/integration).
+      externalIntegrationUser: user.externalIntegrationUser,
     };
   }
 
