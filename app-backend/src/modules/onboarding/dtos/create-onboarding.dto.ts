@@ -33,6 +33,41 @@ export class IntegrationCredentialsDto {
   @IsOptional()
   @IsString()
   clientSecret?: string;
+
+  @ApiPropertyOptional({
+    description: 'ION API base URL with tenant (iu + ti from the .ionapi)',
+  })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  ionApiUrl?: string;
+
+  @ApiPropertyOptional({
+    maxLength: 255,
+    description: 'Backend Service client id (ci)',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  serviceClientId?: string;
+
+  @ApiPropertyOptional({ description: 'Backend Service client secret (cs)' })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  serviceClientSecret?: string;
+
+  @ApiPropertyOptional({ description: 'Service account access key (saak)' })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  serviceAccountKey?: string;
+
+  @ApiPropertyOptional({ description: 'Service account secret key (sask)' })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  serviceAccountSecret?: string;
 }
 
 export class CreateOnboardingDto {

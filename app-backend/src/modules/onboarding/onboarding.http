@@ -16,6 +16,11 @@ Content-Type: application/json
     "provider": "INFOR",
     "baseUrl": "https://api.infor.example.com",
     "clientId": "client-123",
-    "clientSecret": "super-secret-value"
+    "clientSecret": "super-secret-value",
+    "ionApiUrl": "https://mingle-ionapi.inforcloudsuite.com/TENANT_TST",
+    "serviceClientId": "TENANT_TST~backend-service-client",
+    "serviceClientSecret": "backend-service-secret",
+    "serviceAccountKey": "TENANT_TST#service-account-access-key",
+    "serviceAccountSecret": "service-account-secret-key"
   }
 }

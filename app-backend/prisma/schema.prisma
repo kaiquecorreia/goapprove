@@ -180,6 +180,16 @@ model CompanyIntegration {
   baseUrl       String   @map("base_url") @db.Text
   clientId      String?  @map("client_id") @db.VarChar(255)
   clientSecret  String?  @map("client_secret") @db.Text
+
+  // Backend Service credentials (ION API "Backend Service" client + service
+  // account), used server-side to call LN. baseUrl/clientId/clientSecret above
+  // belong to the web client used for user login and can't do a password grant.
+  ionApiUrl            String? @map("ion_api_url") @db.Text
+  serviceClientId      String? @map("service_client_id") @db.VarChar(255)
+  serviceClientSecret  String? @map("service_client_secret") @db.Text
+  serviceAccountKey    String? @map("service_account_key") @db.Text
+  serviceAccountSecret String? @map("service_account_secret") @db.Text
+
   customData    Json?    @map("custom_data")
   active        Boolean  @default(true)
   createdAt     DateTime @default(now()) @map("created_at")

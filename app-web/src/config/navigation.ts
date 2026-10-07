@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   FilePlus2,
   ClipboardList,
+  Plug,
 } from 'lucide-react';
 
 type RoutesType = {
@@ -92,9 +93,12 @@ const ALL_PAGE_ROUTES = [
   ERoutePath.INTEGRATIONS,
 ];
 
-// AUDIT is deliberately excluded from OWNER: only ADMINISTRATOR may see the
-// audit trail (it exposes IPs, user agents and change diffs of other users).
-const OWNER_PAGE_ROUTES = ALL_PAGE_ROUTES.filter((route) => route !== ERoutePath.AUDIT);
+// Excluded from OWNER, ADMINISTRATOR only: AUDIT exposes IPs, user agents and
+// change diffs of other users; INTEGRATIONS holds the company's Infor credentials.
+const ADMINISTRATOR_ONLY_ROUTES = [ERoutePath.AUDIT, ERoutePath.INTEGRATIONS];
+const OWNER_PAGE_ROUTES = ALL_PAGE_ROUTES.filter(
+  (route) => !ADMINISTRATOR_ONLY_ROUTES.includes(route),
+);
 
 export const ROLE_ROUTE_ACCESS: Record<EUserRole, ERoutePath[]> = {
   [EUserRole.OWNER]: OWNER_PAGE_ROUTES,
@@ -236,6 +240,12 @@ export const navigationGroups: NavigationGroup[] = [
         href: ERoutePath.COMPANIES,
         icon: Building2,
         allowedRoles: [EUserRole.OWNER, EUserRole.ADMINISTRATOR, EUserRole.EXTERNAL_INTEGRATION],
+      },
+      {
+        name: 'Integrações',
+        href: ERoutePath.INTEGRATIONS,
+        icon: Plug,
+        allowedRoles: [EUserRole.ADMINISTRATOR],
       },
     ],
   },

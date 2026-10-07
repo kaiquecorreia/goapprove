@@ -59,7 +59,10 @@ export class OnboardingController {
   }
 
   @Patch('company/:companyId/integration')
-  @ApiOperation({ summary: "Update a company's Infor integration config" })
+  @ApiOperation({
+    summary:
+      "Create or update a company's Infor integration config (ADMINISTRATOR only)",
+  })
   @Audit({
     action: 'onboarding.integration_updated',
     entity: 'Company',
@@ -69,9 +72,13 @@ export class OnboardingController {
     captureBody: true,
   })
   @ApiBody({ type: UpdateIntegrationDto })
-  @ApiResponse({ status: 200, description: 'Integration updated' })
+  @ApiResponse({ status: 200, description: 'Integration created or updated' })
+  @ApiResponse({
+    status: 400,
+    description: 'baseUrl missing when creating the integration',
+  })
   @ApiResponse({ status: 403, description: 'Not authorized' })
-  @ApiResponse({ status: 404, description: 'Integration not found' })
+  @ApiResponse({ status: 404, description: 'Company not found' })
   updateIntegration(
     @Param('companyId', new ParseUUIDPipe({ version: '4' })) companyId: string,
     @Body() data: UpdateIntegrationDto,

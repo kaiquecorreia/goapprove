@@ -9,6 +9,8 @@ const REDACTED_KEYS = new Set([
   'confirmpassword',
   'passwordhash',
   'clientsecret',
+  'serviceclientsecret',
+  'serviceaccountsecret',
   'secret',
   'token',
   'accesstoken',

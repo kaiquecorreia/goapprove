@@ -30,9 +30,8 @@ export default withAuth(
       if (pathname.startsWith('/api/integration')) {
         const allowed =
           isAuthenticated &&
-          !!req.nextauth.token?.companyId &&
           !!req.nextauth.token?.externalIntegrationUser &&
-          (role === EUserRole.OWNER || role === EUserRole.ADMINISTRATOR);
+          role === EUserRole.ADMINISTRATOR;
 
         return allowed ? NextResponse.next() : unauthorizedApiResponse();
       }

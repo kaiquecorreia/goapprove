@@ -1,10 +1,11 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Environment, UserRole } from '@prisma/client';
+import { CompanyIntegration, Environment, UserRole } from '@prisma/client';
 
 import { CreateCompanyUseCase } from '../../company/use-cases/create-company.use-case';
 import { CompanyRepository } from '../../company/repositories/company.repository';
@@ -32,27 +33,14 @@ export class OnboardingService {
     private readonly transactionService: TransactionService,
   ) {}
 
-  private async assertOwnerOrAdminOfCompany(
-    companyId: string,
-    actingExternalIntegrationUser: string,
-  ) {
+  // ADMINISTRATOR manages integrations of every company, not only the ones
+  // it's linked to — same unrestricted scope it has everywhere else.
+  private async assertAdministrator(actingExternalIntegrationUser: string) {
     const user = await this.userRepository.findByExternalIntegrationUser(
       actingExternalIntegrationUser,
     );
 
-    if (
-      !user ||
-      !user.active ||
-      (user.role !== UserRole.OWNER && user.role !== UserRole.ADMINISTRATOR)
-    ) {
-      throw new ForbiddenException(FORBIDDEN_MESSAGE);
-    }
-
-    const companyUsers = await this.companyUserRepository.findByUserId(
-      user.userId,
-    );
-
-    if (!companyUsers.some((cu) => cu.companyId === companyId)) {
+    if (!user || !user.active || user.role !== UserRole.ADMINISTRATOR) {
       throw new ForbiddenException(FORBIDDEN_MESSAGE);
     }
   }
@@ -71,9 +59,7 @@ export class OnboardingService {
       );
     }
 
-    const clientSecret = dto.integration.clientSecret
-      ? this.cryptoService.encrypt(dto.integration.clientSecret)
-      : undefined;
+    const clientSecret = this.encryptIfPresent(dto.integration.clientSecret);
 
     return this.transactionService.run(async () => {
       const company = await this.createCompanyUseCase.execute({
@@ -104,6 +90,15 @@ export class OnboardingService {
         baseUrl: dto.integration.baseUrl,
         clientId: dto.integration.clientId,
         clientSecret,
+        ionApiUrl: dto.integration.ionApiUrl,
+        serviceClientId: dto.integration.serviceClientId,
+        serviceClientSecret: this.encryptIfPresent(
+          dto.integration.serviceClientSecret,
+        ),
+        serviceAccountKey: dto.integration.serviceAccountKey,
+        serviceAccountSecret: this.encryptIfPresent(
+          dto.integration.serviceAccountSecret,
+        ),
         active: true,
       });
 
@@ -115,10 +110,7 @@ export class OnboardingService {
     companyId: string,
     actingExternalIntegrationUser: string,
   ) {
-    await this.assertOwnerOrAdminOfCompany(
-      companyId,
-      actingExternalIntegrationUser,
-    );
+    await this.assertAdministrator(actingExternalIntegrationUser);
 
     const integration =
       await this.companyIntegrationRepository.findByCompanyAndProvider(
@@ -130,46 +122,80 @@ export class OnboardingService {
       throw new NotFoundException('Integration not found for this company');
     }
 
+    return this.toIntegrationResponse(integration);
+  }
+
+  async updateCompanyIntegration(companyId: string, dto: UpdateIntegrationDto) {
+    await this.assertAdministrator(dto.actingExternalIntegrationUser);
+
+    const company = await this.companyRepository.findById(companyId);
+
+    if (!company) {
+      throw new NotFoundException(`Company with id ${companyId} not found`);
+    }
+
+    const data = {
+      baseUrl: dto.baseUrl,
+      clientId: dto.clientId,
+      clientSecret: this.encryptIfPresent(dto.clientSecret),
+      ionApiUrl: dto.ionApiUrl,
+      serviceClientId: dto.serviceClientId,
+      serviceClientSecret: this.encryptIfPresent(dto.serviceClientSecret),
+      serviceAccountKey: dto.serviceAccountKey,
+      serviceAccountSecret: this.encryptIfPresent(dto.serviceAccountSecret),
+    };
+
+    const integration =
+      await this.companyIntegrationRepository.findByCompanyAndProvider(
+        companyId,
+        'INFOR',
+      );
+
+    if (integration) {
+      return this.toIntegrationResponse(
+        await this.companyIntegrationRepository.update(
+          integration.integrationId,
+          data,
+        ),
+      );
+    }
+
+    // Companies created outside onboarding have no integration yet: the first
+    // save creates it.
+    if (!dto.baseUrl) {
+      throw new BadRequestException(
+        'baseUrl is required to create the integration',
+      );
+    }
+
+    return this.toIntegrationResponse(
+      await this.companyIntegrationRepository.create({
+        ...data,
+        baseUrl: dto.baseUrl,
+        companyId,
+        provider: 'INFOR',
+        authType: 'oauth2',
+        active: true,
+      }),
+    );
+  }
+
+  private encryptIfPresent(value?: string): string | undefined {
+    return value ? this.cryptoService.encrypt(value) : undefined;
+  }
+
+  // Secrets never leave the backend; the UI only needs to know they're set.
+  private toIntegrationResponse(integration: CompanyIntegration) {
     return {
       provider: integration.provider,
       baseUrl: integration.baseUrl,
       clientId: integration.clientId,
       hasSecret: !!integration.clientSecret,
-    };
-  }
-
-  async updateCompanyIntegration(companyId: string, dto: UpdateIntegrationDto) {
-    await this.assertOwnerOrAdminOfCompany(
-      companyId,
-      dto.actingExternalIntegrationUser,
-    );
-
-    const integration =
-      await this.companyIntegrationRepository.findByCompanyAndProvider(
-        companyId,
-        'INFOR',
-      );
-
-    if (!integration) {
-      throw new NotFoundException('Integration not found for this company');
-    }
-
-    const updated = await this.companyIntegrationRepository.update(
-      integration.integrationId,
-      {
-        baseUrl: dto.baseUrl,
-        clientId: dto.clientId,
-        clientSecret: dto.clientSecret
-          ? this.cryptoService.encrypt(dto.clientSecret)
-          : undefined,
-      },
-    );
-
-    return {
-      provider: updated.provider,
-      baseUrl: updated.baseUrl,
-      clientId: updated.clientId,
-      hasSecret: !!updated.clientSecret,
+      ionApiUrl: integration.ionApiUrl,
+      serviceClientId: integration.serviceClientId,
+      hasServiceClientSecret: !!integration.serviceClientSecret,
+      serviceAccountKey: integration.serviceAccountKey,
+      hasServiceAccountSecret: !!integration.serviceAccountSecret,
     };
   }
 }
