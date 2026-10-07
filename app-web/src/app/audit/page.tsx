@@ -103,6 +103,7 @@ export default function AuditoriaPage() {
       <AuditDetailSheet
         event={selectedEvent}
         onOpenChange={(open) => !open && setSelectedEvent(null)}
+        onSelectEvent={setSelectedEvent}
       />
     </div>
   );

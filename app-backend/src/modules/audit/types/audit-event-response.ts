@@ -1,4 +1,4 @@
-import { AuditEvent } from '@prisma/client';
+import { AuditEventWithCompany } from '../repositories/audit.repository';
 
 /**
  * Shape consumed by the web audit screen. Field names mirror what the UI
@@ -17,7 +17,11 @@ export interface AuditEventResponse {
   severity: string;
   message: string | null;
   companyId: string | null;
+  companyName: string | null;
   actorUserId: string | null;
+  actorType: string;
+  httpMethod: string | null;
+  httpPath: string | null;
   metadata: unknown;
   before: unknown;
   after: unknown;
@@ -30,7 +34,9 @@ export interface AuditEventsPage {
   limit: number;
 }
 
-export function toAuditEventResponse(event: AuditEvent): AuditEventResponse {
+export function toAuditEventResponse(
+  event: AuditEventWithCompany,
+): AuditEventResponse {
   return {
     id: event.auditEventId,
     at: event.createdAt,
@@ -44,7 +50,11 @@ export function toAuditEventResponse(event: AuditEvent): AuditEventResponse {
     severity: event.severity,
     message: event.message,
     companyId: event.companyId,
+    companyName: event.company?.name ?? null,
     actorUserId: event.actorUserId,
+    actorType: event.actorType,
+    httpMethod: event.httpMethod,
+    httpPath: event.httpPath,
     metadata: event.metadata,
     before: event.before,
     after: event.after,

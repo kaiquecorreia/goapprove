@@ -40,8 +40,14 @@ export interface FindAuditEventsCriteria {
   dateTo?: Date;
 }
 
+// The company name rides along so the audit screen can show it without a
+// second lookup per event.
+export type AuditEventWithCompany = AuditEvent & {
+  company: { name: string } | null;
+};
+
 export interface FindAuditEventsResult {
-  items: AuditEvent[];
+  items: AuditEventWithCompany[];
   total: number;
 }
 
@@ -55,5 +61,5 @@ export abstract class AuditRepository {
   abstract findByEntity(
     entity: string,
     entityId: string,
-  ): Promise<AuditEvent[]>;
+  ): Promise<AuditEventWithCompany[]>;
 }

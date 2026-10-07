@@ -26,6 +26,12 @@ interface RawAuditEvent {
   correlationId: string | null;
   severity: string;
   message: string | null;
+  companyId: string | null;
+  companyName: string | null;
+  actorUserId: string | null;
+  actorType: string;
+  httpMethod: string | null;
+  httpPath: string | null;
   metadata: Record<string, unknown> | null;
   before: Record<string, unknown> | null;
   after: Record<string, unknown> | null;
@@ -53,6 +59,12 @@ function toAuditEvent(event: RawAuditEvent): AuditEvent {
     correlationId: event.correlationId ?? EM_DASH,
     severity: event.severity as AuditSeverity,
     message: event.message ?? undefined,
+    companyId: event.companyId ?? undefined,
+    companyName: event.companyName ?? undefined,
+    actorUserId: event.actorUserId ?? undefined,
+    actorType: event.actorType,
+    httpMethod: event.httpMethod ?? undefined,
+    httpPath: event.httpPath ?? undefined,
     metadata: event.metadata ?? undefined,
     before: event.before ?? undefined,
     after: event.after ?? undefined,

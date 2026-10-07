@@ -213,6 +213,12 @@ export interface AuditEvent {
   correlationId: string;
   severity: AuditSeverity;
   message?: string;
+  companyId?: string;
+  companyName?: string;
+  actorUserId?: string;
+  actorType: string;
+  httpMethod?: string;
+  httpPath?: string;
   metadata?: Record<string, unknown>;
   before?: Record<string, unknown>;
   after?: Record<string, unknown>;

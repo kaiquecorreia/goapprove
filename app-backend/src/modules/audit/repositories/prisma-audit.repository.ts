@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { AuditEvent, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import {
+  AuditEventWithCompany,
   AuditRepository,
   CreateAuditEventInput,
   FindAuditEventsCriteria,
@@ -12,6 +13,8 @@ import {
 function toJson(value: unknown): Prisma.InputJsonValue | undefined {
   return value === undefined || value === null ? undefined : value;
 }
+
+const COMPANY_NAME = { company: { select: { name: true } } } as const;
 
 @Injectable()
 export class PrismaAuditRepository extends AuditRepository {
@@ -62,6 +65,7 @@ export class PrismaAuditRepository extends AuditRepository {
         orderBy: { createdAt: 'desc' },
         skip: criteria.skip,
         take: criteria.take,
+        include: COMPANY_NAME,
       }),
       client.auditEvent.count({ where }),
     ]);
@@ -71,10 +75,14 @@ export class PrismaAuditRepository extends AuditRepository {
 
   // Served by the (entity, entity_id, created_at) index. Ascending because
   // timelines render oldest first.
-  async findByEntity(entity: string, entityId: string): Promise<AuditEvent[]> {
+  async findByEntity(
+    entity: string,
+    entityId: string,
+  ): Promise<AuditEventWithCompany[]> {
     return this.prismaService.getClient().auditEvent.findMany({
       where: { entity, entityId },
       orderBy: { createdAt: 'asc' },
+      include: COMPANY_NAME,
     });
   }
 
