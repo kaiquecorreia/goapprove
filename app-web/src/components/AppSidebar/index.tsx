@@ -21,12 +21,15 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
   const { data: session } = useSession();
   const role = session?.role as EUserRole | undefined;
 
+  // Groups declared without items (placeholders for upcoming sections) stay visible;
+  // the others are hidden when the role can't access any of their items.
   const visibleGroups = navigationGroups
     .map((group) => ({
       ...group,
+      isPlaceholder: group.items.length === 0,
       items: group.items.filter((item) => role && item.allowedRoles.includes(role)),
     }))
-    .filter((group) => group.items.length > 0);
+    .filter((group) => group.isPlaceholder || group.items.length > 0);
 
   const activeGroup = visibleGroups.find((group) =>
     group.items.some((item) => item.href === pathname),

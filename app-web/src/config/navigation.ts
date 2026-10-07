@@ -219,6 +219,12 @@ export const navigationGroups: NavigationGroup[] = [
     ],
   },
   {
+    id: 'nfe-portal',
+    label: 'Portal NFe',
+    collapsible: true,
+    items: [],
+  },
+  {
     id: 'configuration',
     label: 'Configuração',
     collapsible: true,
