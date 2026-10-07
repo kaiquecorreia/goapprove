@@ -6,6 +6,7 @@ import {
   UseFormRegister,
   UseFormSetValue,
   useFieldArray,
+  useFormState,
   useWatch,
 } from 'react-hook-form';
 import { Plus, Trash2 } from 'lucide-react';
@@ -38,6 +39,8 @@ interface CriterionRowProps {
 function CriterionRow({ control, register, setValue, index, onRemove }: CriterionRowProps) {
   const operator = useWatch({ control, name: `criteria.${index}.operator` });
   const sourceType = useWatch({ control, name: `criteria.${index}.sourceType` });
+  const { errors } = useFormState({ control, name: `criteria.${index}` });
+  const rowErrors = errors.criteria?.[index];
   const showBetween = operator === 'BETWEEN';
   const showList = operator === 'IN_LIST' || operator === 'NOT_IN_LIST';
   const showValue = !showBetween && !showList && operator !== 'EXISTS' && operator !== 'NOT_EXISTS';
@@ -78,11 +81,13 @@ function CriterionRow({ control, register, setValue, index, onRemove }: Criterio
           <Select
             options={fieldOptions}
             placeholder="Campo"
+            error={rowErrors?.field?.message}
             {...register(`criteria.${index}.field`)}
           />
         ) : (
           <Input
             placeholder={RULE_FIELD_EXAMPLES.PO_ADDITIONAL}
+            error={rowErrors?.field?.message}
             {...register(`criteria.${index}.field`)}
           />
         )}
@@ -91,16 +96,27 @@ function CriterionRow({ control, register, setValue, index, onRemove }: Criterio
           placeholder="Operador"
           {...register(`criteria.${index}.operator`)}
         />
-        {showValue && <Input placeholder="Valor" {...register(`criteria.${index}.value`)} />}
+        {showValue && (
+          <Input
+            placeholder="Valor"
+            error={rowErrors?.value?.message}
+            {...register(`criteria.${index}.value`)}
+          />
+        )}
         {showBetween && (
           <>
             <Input placeholder="Valor (de)" {...register(`criteria.${index}.value`)} />
-            <Input placeholder="Até" {...register(`criteria.${index}.valueTo`)} />
+            <Input
+              placeholder="Até"
+              error={rowErrors?.valueTo?.message}
+              {...register(`criteria.${index}.valueTo`)}
+            />
           </>
         )}
         {showList && (
           <Input
             placeholder="Lista (separados por vírgula)"
+            error={rowErrors?.valueList?.message}
             {...register(`criteria.${index}.valueList`)}
           />
         )}

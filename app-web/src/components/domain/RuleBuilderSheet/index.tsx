@@ -107,6 +107,12 @@ export function RuleBuilderSheet({ trigger, companies, users, rule }: RuleBuilde
     }
   }, [isAutoApprove, setValue]);
 
+  // Some errors live on fields the user may not be looking at (e.g. a criterion
+  // further down), so a blocked submit always says so instead of doing nothing.
+  const onInvalid = () => {
+    feedback.error('Revise os campos destacados antes de salvar a regra.');
+  };
+
   const onSubmit = async (data: RuleFormData) => {
     const conditions: RuleConditionPayload[] = data.criteria.map((criterion) => ({
       sourceType: criterion.sourceType,
@@ -174,7 +180,7 @@ export function RuleBuilderSheet({ trigger, companies, users, rule }: RuleBuilde
         </SheetHeader>
 
         <form
-          onSubmit={handleSubmit(onSubmit)}
+          onSubmit={handleSubmit(onSubmit, onInvalid)}
           style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
         >
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem' }}>
