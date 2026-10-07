@@ -1,0 +1,80 @@
+@use '../../../styles/variables' as *;
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  padding-bottom: $spacing-md;
+  margin-bottom: $spacing-md;
+  border-bottom: 1px solid var(--color-card-border);
+}
+
+.sectionTitle {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.required {
+  color: var(--color-error);
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: $spacing-md 1.5rem;
+
+  @media (max-width: $breakpoint-lg) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: $breakpoint-md) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.wideField {
+  grid-column: span 3;
+
+  @media (max-width: $breakpoint-lg) {
+    grid-column: span 2;
+  }
+
+  @media (max-width: $breakpoint-md) {
+    grid-column: auto;
+  }
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+
+  table {
+    min-width: 720px;
+  }
+}
+
+.actionsColumn {
+  width: 80px;
+}
+
+.emptyMessage {
+  padding: 1.5rem 0;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}

@@ -10,6 +10,7 @@ import {
   FilePlus2,
   ClipboardList,
   Plug,
+  MailCheck,
 } from 'lucide-react';
 
 type RoutesType = {
@@ -32,6 +33,7 @@ export enum ERoutePath {
   QUOTES_DASHBOARD = '/quotes',
   QUOTES_NEW = '/quotes/new',
   QUOTES_PENDING = '/quotes/pending',
+  QUOTES_RECEIVED = '/quotes/received',
   QUOTES_HISTORY = '/quotes/history',
   RULES = '/rules',
   USERS = '/users',
@@ -49,6 +51,7 @@ export const ROUTES: RoutesType = {
     ERoutePath.QUOTES_DASHBOARD,
     ERoutePath.QUOTES_NEW,
     ERoutePath.QUOTES_PENDING,
+    ERoutePath.QUOTES_RECEIVED,
     ERoutePath.QUOTES_HISTORY,
     ERoutePath.RULES,
     ERoutePath.USERS,
@@ -85,6 +88,7 @@ const ALL_PAGE_ROUTES = [
   ERoutePath.QUOTES_DASHBOARD,
   ERoutePath.QUOTES_NEW,
   ERoutePath.QUOTES_PENDING,
+  ERoutePath.QUOTES_RECEIVED,
   ERoutePath.QUOTES_HISTORY,
   ERoutePath.RULES,
   ERoutePath.USERS,
@@ -103,7 +107,12 @@ const OWNER_PAGE_ROUTES = ALL_PAGE_ROUTES.filter(
 export const ROLE_ROUTE_ACCESS: Record<EUserRole, ERoutePath[]> = {
   [EUserRole.OWNER]: OWNER_PAGE_ROUTES,
   [EUserRole.ADMINISTRATOR]: ALL_PAGE_ROUTES,
-  [EUserRole.APPROVER]: [ERoutePath.OCS_PENDING, ERoutePath.QUOTES_NEW, ERoutePath.QUOTES_PENDING],
+  [EUserRole.APPROVER]: [
+    ERoutePath.OCS_PENDING,
+    ERoutePath.QUOTES_NEW,
+    ERoutePath.QUOTES_PENDING,
+    ERoutePath.QUOTES_RECEIVED,
+  ],
   [EUserRole.VIEWER]: [ERoutePath.HISTORY, ERoutePath.QUOTES_HISTORY],
   [EUserRole.RULES_MANAGER]: [ERoutePath.RULES],
   [EUserRole.EXTERNAL_INTEGRATION]: [ERoutePath.COMPANIES],
@@ -208,6 +217,12 @@ export const navigationGroups: NavigationGroup[] = [
         name: 'Cotações Pendentes',
         href: ERoutePath.QUOTES_PENDING,
         icon: ClipboardList,
+        allowedRoles: [EUserRole.OWNER, EUserRole.ADMINISTRATOR, EUserRole.APPROVER],
+      },
+      {
+        name: 'Cotações Recebidas',
+        href: ERoutePath.QUOTES_RECEIVED,
+        icon: MailCheck,
         allowedRoles: [EUserRole.OWNER, EUserRole.ADMINISTRATOR, EUserRole.APPROVER],
       },
       {

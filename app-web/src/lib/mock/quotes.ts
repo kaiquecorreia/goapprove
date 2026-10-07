@@ -12,3 +12,35 @@ export const mockQuoteCompanies: SelectOption[] = [
   { value: '200', label: '200 – GoApprove Comércio LTDA' },
   { value: '300', label: '300 – GoApprove Serviços LTDA' },
 ];
+
+export interface QuoteSupplier {
+  id: string;
+  name: string;
+  cnpj: string;
+  email: string;
+  phone: string;
+}
+
+export const mockQuoteSuppliers: QuoteSupplier[] = [
+  {
+    id: 'sup-1',
+    name: 'Aço Forte Distribuidora LTDA',
+    cnpj: '12.345.678/0001-90',
+    email: 'cotacoes@acoforte.com.br',
+    phone: '(11) 3456-7890',
+  },
+  {
+    id: 'sup-2',
+    name: 'Embalagens Paulista S.A.',
+    cnpj: '23.456.789/0001-01',
+    email: 'vendas@embpaulista.com.br',
+    phone: '(19) 3222-1100',
+  },
+  {
+    id: 'sup-3',
+    name: 'Química Sul Insumos LTDA',
+    cnpj: '34.567.890/0001-12',
+    email: 'comercial@quimicasul.com.br',
+    phone: '',
+  },
+];
