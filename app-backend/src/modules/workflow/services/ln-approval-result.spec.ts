@@ -1,5 +1,8 @@
 import { WorkflowWithRelations } from '../types/workflow-with-relations';
-import { buildLnApprovalResult } from './ln-approval-result';
+import {
+  buildLnApprovalResult,
+  buildLnApproveOrder,
+} from './ln-approval-result';
 
 const FINALIZED_AT = new Date('2026-06-16T17:22:10.000Z');
 
@@ -230,5 +233,19 @@ describe('buildLnApprovalResult', () => {
         comment: 'Aprovado em substituição.',
       }),
     ]);
+  });
+});
+
+describe('buildLnApproveOrder', () => {
+  it('targets the order by number and company, with LN rules and amount checks disabled', () => {
+    expect(buildLnApproveOrder(buildWorkflow())).toEqual({
+      companyCode: '001',
+      purchaseOrderNumber: 'OC000001',
+      body: {
+        ApplyApprovalRules: false,
+        CheckAmountUpto: 0,
+        CheckAmountUptoCurrency: 'BRL',
+      },
+    });
   });
 });

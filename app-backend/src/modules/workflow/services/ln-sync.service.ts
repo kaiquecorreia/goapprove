@@ -11,9 +11,17 @@ import {
   LnApiClient,
   LnApiConfig,
   LnApprovalResultPayload,
+  LnApproveOrderRequest,
   LnCallDetails,
 } from './ln-api-client';
-import { buildLnApprovalResult } from './ln-approval-result';
+import {
+  buildLnApprovalResult,
+  buildLnApproveOrder,
+} from './ln-approval-result';
+
+// What was sent to LN: the Approve request for approvals, the
+// ApprovalResponse payload for rejections.
+export type LnSyncPayload = LnApproveOrderRequest | LnApprovalResultPayload;
 
 // Everything recorded in the audit trail (metadata.ln) about one delivery
 // attempt, so a failure can be investigated from the audit screen alone.
@@ -24,7 +32,7 @@ export type LnSyncDetails =
       integrationActive: boolean;
       missingFields: string[];
     }
-  | (LnCallDetails & { payload: LnApprovalResultPayload });
+  | (LnCallDetails & { payload: LnSyncPayload });
 
 // Any reason the result could not be delivered to LN: missing/incomplete
 // integration, SSO or LN refusing the call, network errors.
@@ -98,14 +106,30 @@ export class LnSyncService {
       );
     }
 
-    const payload = buildLnApprovalResult(workflow);
+    const config = this.buildLnApiConfig(integration);
 
-    try {
-      const call = await this.lnApiClient.sendApprovalResult(
-        this.buildLnApiConfig(integration),
-        payload,
+    // Approvals go through LN's standard purchase order Approve action;
+    // rejections still use the custom ApprovalResponse.
+    if (workflow.status === 'APPROVED') {
+      const request = buildLnApproveOrder(workflow);
+      return this.callLn(request, () =>
+        this.lnApiClient.approvePurchaseOrder(config, request),
       );
-      return { ...call, payload };
+    }
+
+    const payload = buildLnApprovalResult(workflow);
+    return this.callLn(payload, () =>
+      this.lnApiClient.sendApprovalResult(config, payload),
+    );
+  }
+
+  // Attaches what was sent to the call details, on success and failure alike.
+  private async callLn(
+    payload: LnSyncPayload,
+    call: () => Promise<LnCallDetails>,
+  ): Promise<LnSyncDetails> {
+    try {
+      return { ...(await call()), payload };
     } catch (error) {
       if (error instanceof LnApiCallError) {
         throw new LnSyncError(error.message, { ...error.details, payload });

@@ -46,6 +46,7 @@ const LN_STAGE_LABEL: Record<string, string> = {
   CONFIG: 'Configuração da integração (nenhuma chamada foi feita)',
   TOKEN: 'Autenticação no Infor SSO (obtenção do token)',
   APPROVAL_RESPONSE: 'Envio do resultado ao LN (ApprovalResponse)',
+  APPROVE: 'Aprovação da ordem de compra no LN (purPurchaseOrder.Approve)',
 };
 
 // Shape written by the backend's LnSyncService into metadata.ln.

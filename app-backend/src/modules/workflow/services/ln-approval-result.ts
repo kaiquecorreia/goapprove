@@ -2,7 +2,11 @@ import {
   ApprovalWorkflowApproverWithUser,
   WorkflowWithRelations,
 } from '../types/workflow-with-relations';
-import { LnApprovalResultPayload, LnDecision } from './ln-api-client';
+import {
+  LnApprovalResultPayload,
+  LnApproveOrderRequest,
+  LnDecision,
+} from './ln-api-client';
 
 // The LN return contract is still subject to change on the LN side, so the
 // whole Portal -> LN mapping lives here and nowhere else.
@@ -15,6 +19,24 @@ function hasDecided(
   approver: ApprovalWorkflowApproverWithUser,
 ): approver is DecidedApprover {
   return approver.status === 'APPROVED' || approver.status === 'REJECTED';
+}
+
+// The decision was already made in the Portal, so LN must approve the order
+// as is, without re-running its own approval rules or amount checks.
+export function buildLnApproveOrder(
+  workflow: WorkflowWithRelations,
+): LnApproveOrderRequest {
+  const { purchaseOrder } = workflow;
+
+  return {
+    companyCode: purchaseOrder.company.externalIntegrationCode,
+    purchaseOrderNumber: purchaseOrder.orderNumber,
+    body: {
+      ApplyApprovalRules: false,
+      CheckAmountUpto: 0,
+      CheckAmountUptoCurrency: 'BRL',
+    },
+  };
 }
 
 export function buildLnApprovalResult(

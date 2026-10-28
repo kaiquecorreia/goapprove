@@ -7,6 +7,7 @@ import {
   LnApiClient,
   LnApiConfig,
   LnApprovalResultPayload,
+  LnApproveOrderRequest,
 } from './ln-api-client';
 
 const config: LnApiConfig = {
@@ -27,6 +28,16 @@ const payload: LnApprovalResultPayload = {
   decisionDate: '2026-10-04T16:10:00.000Z',
   finalStatusPortal: 'APPROVED',
   approvers: [],
+};
+
+const approveRequest: LnApproveOrderRequest = {
+  companyCode: '3101',
+  purchaseOrderNumber: '000078789',
+  body: {
+    ApplyApprovalRules: false,
+    CheckAmountUpto: 0,
+    CheckAmountUptoCurrency: 'BRL',
+  },
 };
 
 function response<T>(data: T, status = 200): AxiosResponse<T> {
@@ -170,5 +181,76 @@ describe('LnApiClient', () => {
     await expect(client.sendApprovalResult(config, payload)).rejects.toThrow(
       /Falha ao enviar resultado ao LN: HTTP 500 .*Order not found/,
     );
+  });
+
+  describe('approvePurchaseOrder', () => {
+    it('chama a action Approve da OC, com o número na chave e a empresa no header', async () => {
+      httpService.post
+        .mockReturnValueOnce(of(response({ access_token: 'tok-123' })))
+        .mockReturnValueOnce(of(response('', 204)));
+
+      await expect(
+        client.approvePurchaseOrder(config, approveRequest),
+      ).resolves.toEqual(
+        expect.objectContaining({
+          stage: 'APPROVE',
+          method: 'POST',
+          url: "https://mingle-ionapi.inforcloudsuite.com/TENANT_TST/LN/lnapi/odata/tdapi.purPurchaseOrder/Orders(PurchaseOrder='000078789')/tdapi.purPurchaseOrder.Approve",
+          httpStatus: 204,
+        }),
+      );
+
+      expect(httpService.post).toHaveBeenLastCalledWith(
+        "https://mingle-ionapi.inforcloudsuite.com/TENANT_TST/LN/lnapi/odata/tdapi.purPurchaseOrder/Orders(PurchaseOrder='000078789')/tdapi.purPurchaseOrder.Approve",
+        {
+          ApplyApprovalRules: false,
+          CheckAmountUpto: 0,
+          CheckAmountUptoCurrency: 'BRL',
+        },
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer tok-123',
+            'Content-Type': 'application/json',
+            'X-Infor-LnCompany': '3101',
+          }) as unknown,
+        }),
+      );
+    });
+
+    it('escapa o número da OC como literal OData', async () => {
+      httpService.post
+        .mockReturnValueOnce(of(response({ access_token: 'tok-123' })))
+        .mockReturnValueOnce(of(response('', 204)));
+
+      await client.approvePurchaseOrder(config, {
+        ...approveRequest,
+        purchaseOrderNumber: "OC'1 #2",
+      });
+
+      const [url] = httpService.post.mock.calls[1] as [string];
+      expect(url).toContain("Orders(PurchaseOrder='OC''1%20%232')/");
+    });
+
+    it('falha no LN: erro com a etapa APPROVE e o corpo da resposta', async () => {
+      httpService.post
+        .mockReturnValueOnce(of(response({ access_token: 'tok-123' })))
+        .mockReturnValueOnce(
+          throwError(() =>
+            axiosError(400, { error: { message: 'Order already approved' } }),
+          ),
+        );
+
+      const error: unknown = await client
+        .approvePurchaseOrder(config, approveRequest)
+        .catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(LnApiCallError);
+      expect((error as LnApiCallError).message).toMatch(
+        /Falha ao aprovar a ordem de compra no LN: HTTP 400 .*Order already approved/,
+      );
+      expect((error as LnApiCallError).details).toEqual(
+        expect.objectContaining({ stage: 'APPROVE', httpStatus: 400 }),
+      );
+    });
   });
 });

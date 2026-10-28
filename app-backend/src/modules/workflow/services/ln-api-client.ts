@@ -26,6 +26,19 @@ export interface LnApprovalResultPayload {
   approvers: LnApprover[];
 }
 
+// Body of LN's standard purchase order Approve action.
+export interface LnApproveOrderBody {
+  ApplyApprovalRules: boolean;
+  CheckAmountUpto: number;
+  CheckAmountUptoCurrency: string;
+}
+
+export interface LnApproveOrderRequest {
+  companyCode: string;
+  purchaseOrderNumber: string;
+  body: LnApproveOrderBody;
+}
+
 // Decrypted Backend Service credentials, as they come from the .ionapi file.
 export interface LnApiConfig {
   ssoUrl: string; // pu + tenant, e.g. https://mingle-sso.inforcloudsuite.com:443/TENANT
@@ -38,10 +51,12 @@ export interface LnApiConfig {
 
 const APPROVAL_RESPONSE_PATH =
   '/LN/lnapi/odata/txckx.Goapprove/ApprovalResponse';
+const PURCHASE_ORDER_PATH = '/LN/lnapi/odata/tdapi.purPurchaseOrder/Orders';
+const APPROVE_ACTION = 'tdapi.purPurchaseOrder.Approve';
 // Kept short: a human decision waits on this call inside a DB transaction.
 const TIMEOUT_MS = 15_000;
 
-export type LnCallStage = 'TOKEN' | 'APPROVAL_RESPONSE';
+export type LnCallStage = 'TOKEN' | 'APPROVAL_RESPONSE' | 'APPROVE';
 
 // What an investigator needs to understand one HTTP call to Infor. Never holds
 // credentials: the token request body (client secret, service account secret)
@@ -67,7 +82,7 @@ export class LnApiCallError extends Error {
 }
 
 /**
- * Posts the approval result to LN through ION API. Deliberately minimal: a
+ * Posts the workflow's result to LN through ION API. Deliberately minimal: a
  * fresh token is fetched on every call (no cache, no refresh) — results are
  * sent once per finalized workflow, and failures are retried manually.
  */
@@ -80,26 +95,60 @@ export class LnApiClient {
     config: LnApiConfig,
     payload: LnApprovalResultPayload,
   ): Promise<LnCallDetails> {
+    return this.post(
+      config,
+      'APPROVAL_RESPONSE',
+      `${trimSlash(config.ionApiUrl)}${APPROVAL_RESPONSE_PATH}`,
+      payload,
+      payload.companyCode,
+      'Falha ao enviar resultado ao LN',
+    );
+  }
+
+  /** Resolves with the details of the purchase order Approve call on success. */
+  async approvePurchaseOrder(
+    config: LnApiConfig,
+    request: LnApproveOrderRequest,
+  ): Promise<LnCallDetails> {
+    const key = encodeURIComponent(odataString(request.purchaseOrderNumber));
+
+    return this.post(
+      config,
+      'APPROVE',
+      `${trimSlash(config.ionApiUrl)}${PURCHASE_ORDER_PATH}(PurchaseOrder=${key})/${APPROVE_ACTION}`,
+      request.body,
+      request.companyCode,
+      'Falha ao aprovar a ordem de compra no LN',
+    );
+  }
+
+  private async post(
+    config: LnApiConfig,
+    stage: LnCallStage,
+    url: string,
+    body: unknown,
+    companyCode: string,
+    errorPrefix: string,
+  ): Promise<LnCallDetails> {
     const token = await this.fetchToken(config);
-    const url = `${trimSlash(config.ionApiUrl)}${APPROVAL_RESPONSE_PATH}`;
     const startedAt = Date.now();
 
     try {
       const response = await firstValueFrom(
-        this.httpService.post(url, payload, {
+        this.httpService.post(url, body, {
           timeout: TIMEOUT_MS,
           headers: {
             Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
             'Content-Language': 'en-US',
-            'X-Infor-LnCompany': payload.companyCode,
+            'X-Infor-LnCompany': companyCode,
           },
         }),
       );
 
       return {
-        stage: 'APPROVAL_RESPONSE',
+        stage,
         method: 'POST',
         url,
         httpStatus: response.status,
@@ -107,13 +156,7 @@ export class LnApiClient {
         durationMs: Date.now() - startedAt,
       };
     } catch (error) {
-      throw toCallError(
-        'Falha ao enviar resultado ao LN',
-        'APPROVAL_RESPONSE',
-        url,
-        startedAt,
-        error,
-      );
+      throw toCallError(errorPrefix, stage, url, startedAt, error);
     }
   }
 
@@ -168,6 +211,12 @@ export class LnApiClient {
 
 function trimSlash(url: string): string {
   return url.replace(/\/+$/, '');
+}
+
+// OData string literal for an entity key: quoted, with embedded quotes doubled.
+// Kept as a string so leading zeros in the order number survive.
+function odataString(value: string): string {
+  return `'${value.replace(/'/g, "''")}'`;
 }
 
 // Surfaces the upstream status and body (e.g. SSO's error_description) both
